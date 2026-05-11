@@ -1,0 +1,35 @@
+/* GRID 3 COLUNAS */
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.info {
+    background: #f9fafb;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.info h4 {
+    margin-bottom: 10px;
+}
+
+.info ul {
+    padding-left: 15px;
+    color: #555;
+    font-size: 14px;
+}
+
+/* FOOTER */
+.footer {
+    margin-top: 20px;
+    padding: 10px;
+    text-align: center;
+    background: #1e3a8a;
+    color: white;
+    border-radius: 6px;
+    font-size: 13px;
+}

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatórios</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <h2>CTG - Gestão</h2>
+        <ul>
+            <li>Dashboard</li>
+            <li>Sócios</li>
+            <li>Formulários</li>
+            <li class="active">Relatórios</li>
+        </ul>
+    </aside>
+
+    <!-- CONTEÚDO -->
+    <main class="content">
+
+        <h1>Relatórios</h1>
+        <p class="sub">Gere relatórios personalizados e exporte em diversos formatos</p>
+
+        <!-- CONFIGURAÇÃO -->
+        <section class="card">
+            <h3>Configurar Relatório</h3>
+
+            <div class="grid">
+
+                <select>
+                    <option>Tipo de Relatório</option>
+                    <option>Sócios</option>
+                    <option>Pagamentos</option>
+                </select>
+
+                <select>
+                    <option>Situação</option>
+                    <option>Todas</option>
+                    <option>Ativo</option>
+                    <option>Inativo</option>
+                </select>
+
+                <select>
+                    <option>Invernada</option>
+                    <option>Todas</option>
+                </select>
+
+                <select>
+                    <option>Status de Pagamento</option>
+                    <option>Todos</option>
+                    <option>Pago</option>
+                    <option>Pendente</option>
+                </select>
+
+                <input type="date" placeholder="Data Início">
+                <input type="date" placeholder="Data Fim">
+
+            </div>
+
+            <button class="btn">Gerar Relatório</button>
+        </section>
+
+        <!-- SOBRE -->
+        <section class="card">
+            <h3>Sobre os Relatórios</h3>
+
+            <div class="grid-3">
+
+                <div class="info">
+                    <h4>Excel (.xlsx)</h4>
+                    <ul>
+                        <li>Ideal para análise de dados</li>
+                        <li>Permite edição e cálculos</li>
+                        <li>Filtros e gráficos</li>
+                    </ul>
+                </div>
+
+                <div class="info">
+                    <h4>Word (.docx)</h4>
+                    <ul>
+                        <li>Documento formatado</li>
+                        <li>Pronto para impressão</li>
+                        <li>Editável</li>
+                    </ul>
+                </div>
+
+                <div class="info">
+                    <h4>PDF (.pdf)</h4>
+                    <ul>
+                        <li>Formato universal</li>
+                        <li>Não editável</li>
+                        <li>Ideal para envio</li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            © 2026 CTG Raízes da Tradição - Cultivar a Tradição Mantendo as nossas Raízes
+        </footer>
+
+    </main>
+
+</div>
+
+</body>
+</html>
