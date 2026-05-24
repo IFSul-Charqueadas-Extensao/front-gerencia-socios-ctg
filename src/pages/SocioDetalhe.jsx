@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import Badge from '../components/Badge'
@@ -14,6 +14,7 @@ import {
   createPagamento
 } from '../services/sociosService'
 import { useToast } from '../contexts/ToastContext'
+import { calcularStatusSocio } from '../utils/statusHelper'
 
 const MESES_NOMES = [
   'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
@@ -113,8 +114,11 @@ export default function SocioDetalhe() {
         setMensalidades(socioMensalidades)
         setPagamentos(pagamentosData)
 
+        const statusAutomatico = calcularStatusSocio(socioData, mensalidadesData)
+
         const formObject = {
           ...socioData,
+          mensalidade: statusAutomatico,
           pagamentos: historicoMapeado
         }
 
@@ -132,6 +136,11 @@ export default function SocioDetalhe() {
   useEffect(() => {
     carregarDados()
   }, [id])
+
+  const statusAutomatico = useMemo(() => {
+    if (!form) return 'Pendente'
+    return calcularStatusSocio(form, mensalidades)
+  }, [form?.status, form?.data_entrada, mensalidades])
 
   if (loading) {
     return (
@@ -179,9 +188,14 @@ export default function SocioDetalhe() {
 
     setSaving(true)
     setSalvo(false)
-    updateSocio(id, form)
+    const payload = {
+      ...form,
+      mensalidade: statusAutomatico
+    }
+    updateSocio(id, payload)
       .then(() => {
-        setOriginal({ ...form })
+        setOriginal(payload)
+        setForm(payload)
         setSalvo(true)
         setSaving(false)
         toast.success('Alterações salvas com sucesso!')
@@ -302,9 +316,9 @@ export default function SocioDetalhe() {
             <h1 className="text-[#1a3560] text-3xl font-bold mb-1 truncate">{form.nome}</h1>
             <p className="text-gray-500 text-sm mb-3">CPF: {form.cpf} · Sócio desde {form.data_entrada}</p>
             <div className="flex gap-2 flex-wrap">
-              <Badge color="green">{form.status}</Badge>
-              <Badge color={form.mensalidade === 'Em dia' ? 'green' : 'red'}>
-                {form.mensalidade === 'Em dia' ? 'Mensalidade em dia' : 'Mensalidade atrasada'}
+              <Badge color={form.status === 'Ativo' ? 'green' : 'red'}>{form.status}</Badge>
+              <Badge color={statusAutomatico === 'Em dia' ? 'green' : statusAutomatico === 'Atrasado' ? 'red' : statusAutomatico === 'Inativo' ? 'gray' : 'yellow'}>
+                {statusAutomatico === 'Em dia' ? 'Mensalidade em dia' : statusAutomatico === 'Atrasado' ? 'Mensalidade atrasada' : statusAutomatico === 'Inativo' ? 'Sócio inativo' : 'Mensalidade pendente'}
               </Badge>
               <Badge color="purple">{form.invernada}</Badge>
             </div>
@@ -364,13 +378,7 @@ export default function SocioDetalhe() {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold">Status de Pagamento</label>
-                <select value={form.mensalidade} onChange={e => setField('mensalidade', e.target.value)} className={inputClass} disabled={saving}>
-                  <option>Em dia</option>
-                  <option>Atrasado</option>
-                </select>
-              </div>
+
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Invernada de Dança</label>

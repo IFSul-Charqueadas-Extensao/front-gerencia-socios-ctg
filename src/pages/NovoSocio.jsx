@@ -60,7 +60,7 @@ export default function NovoSocio() {
 
   const [form, setForm] = useState({
     nome: '', cpf: '', data_nascimento: '', telefone: '', email: '',
-    endereco: '', status: 'Ativo', mensalidade: 'Em dia',
+    endereco: '', status: 'Ativo', mensalidade: 'Pendente',
     invernada: 'Nenhuma', numeroDependentes: 0,
   })
 
@@ -189,13 +189,7 @@ export default function NovoSocio() {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold">Status de Pagamento *</label>
-                <select value={form.mensalidade} onChange={e => setField('mensalidade', e.target.value)} className={inputClass} disabled={cadastrando}>
-                  <option>Em dia</option>
-                  <option>Atrasado</option>
-                </select>
-              </div>
+
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Invernada de Dança *</label>

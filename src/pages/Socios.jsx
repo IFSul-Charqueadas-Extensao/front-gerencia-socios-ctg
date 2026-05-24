@@ -5,8 +5,9 @@ import Layout from '../components/Layout'
 import Badge from '../components/Badge'
 import EmptyState from '../components/EmptyState'
 import { INVERNADAS } from '../data/constants'
-import { getSocios } from '../services/sociosService'
+import { getSocios, getMensalidades } from '../services/sociosService'
 import { useToast } from '../contexts/ToastContext'
+import { calcularStatusSocio } from '../utils/statusHelper'
 
 const INVERNADAS_FILTRO = ['Todas as Invernadas', ...INVERNADAS]
 
@@ -28,9 +29,15 @@ export default function Socios() {
   const [invernada, setInvernada] = useState('Todas as Invernadas')
 
   useEffect(() => {
-    getSocios()
-      .then(data => {
-        setDadosIniciais(data)
+    Promise.all([getSocios(), getMensalidades()])
+      .then(([sociosData, mensalidadesData]) => {
+        const mapped = sociosData.map(s => {
+          return {
+            ...s,
+            mensalidade: calcularStatusSocio(s, mensalidadesData)
+          }
+        })
+        setDadosIniciais(mapped)
         setLoading(false)
       })
       .catch(err => {
@@ -87,6 +94,8 @@ export default function Socios() {
                 <option>Todos os Status</option>
                 <option>Em dia</option>
                 <option>Atrasado</option>
+                <option>Pendente</option>
+                <option>Inativo</option>
               </select>
               <select value={invernada} onChange={e => setInvernada(e.target.value)} className={inputClass}>
                 {INVERNADAS_FILTRO.map(inv => <option key={inv}>{inv}</option>)}
@@ -142,7 +151,9 @@ export default function Socios() {
                         <td className="py-4 px-2.5 border-b border-gray-100 text-sm text-gray-600">{s.invernada}</td>
                         <td className="py-4 px-2.5 border-b border-gray-100 text-sm text-center font-medium text-gray-700">{s.dependentes}</td>
                         <td className="py-4 px-2.5 border-b border-gray-100">
-                          <Badge color={s.mensalidade === 'Em dia' ? 'green' : 'red'}>{s.mensalidade}</Badge>
+                          <Badge color={s.mensalidade === 'Em dia' ? 'green' : s.mensalidade === 'Atrasado' ? 'red' : s.mensalidade === 'Inativo' ? 'gray' : 'yellow'}>
+                            {s.mensalidade}
+                          </Badge>
                         </td>
                         <td className="py-4 px-2.5 border-b border-gray-100 text-blue-400">
                           <ChevronRight size={18} />
