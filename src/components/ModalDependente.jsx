@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useToast } from '../contexts/ToastContext'
 
-const campoVazio = { matricula: '', nome: '', cpf: '' }
+const campoVazio = { nome: '', cpf: '' }
 
 const inputClass = 'w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition-colors'
 
-export default function ModalDependente({ onFechar, onSalvar }) {
-  const [form, setForm] = useState(campoVazio)
+export default function ModalDependente({ onFechar, onSalvar, socioMatricula = '', socioEndereco = '', initial = null }) {
+  const [form, setForm] = useState(initial || { ...campoVazio, telefone: '', data_nascimento: '', dancarino: false })
   const toast = useToast()
 
   function setField(key, value) {
@@ -14,7 +14,7 @@ export default function ModalDependente({ onFechar, onSalvar }) {
   }
 
   function salvar() {
-    if (!form.matricula || !form.nome || !form.cpf) {
+    if (!form.nome || !form.cpf) {
       toast.error('Preencha todos os campos obrigatórios.')
       return
     }
@@ -30,16 +30,7 @@ export default function ModalDependente({ onFechar, onSalvar }) {
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold">Matrícula do Sócio *</label>
-            <input
-              type="text"
-              placeholder="Digite a matrícula do sócio"
-              value={form.matricula}
-              onChange={e => setField('matricula', e.target.value)}
-              className={inputClass}
-            />
-          </div>
+          {/* Matrícula do sócio é atribuída automaticamente; não exibir no modal */}
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold">Nome Completo *</label>
@@ -61,6 +52,35 @@ export default function ModalDependente({ onFechar, onSalvar }) {
               onChange={e => setField('cpf', e.target.value)}
               className={inputClass}
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold">Telefone</label>
+            <input
+              type="text"
+              placeholder="(00) 00000-0000"
+              value={form.telefone}
+              onChange={e => setField('telefone', e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold">Data de Nascimento</label>
+            <input
+              type="date"
+              value={form.data_nascimento || ''}
+              onChange={e => setField('data_nascimento', e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold">É dançarino?</label>
+            <select value={String(form.dancarino)} onChange={e => setField('dancarino', e.target.value === 'true')} className={inputClass}>
+              <option value="true">Sim</option>
+              <option value="false">Não</option>
+            </select>
           </div>
         </div>
 

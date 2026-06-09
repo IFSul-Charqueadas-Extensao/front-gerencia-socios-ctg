@@ -3,10 +3,12 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import Badge from '../components/Badge'
 import ModalPagamento from '../components/ModalPagamento'
+import ModalDependente from '../components/ModalDependente'
 import { INVERNADAS } from '../data/constants'
 import { socioService } from '../services/socioService'
 import { mensalidadeService } from '../services/mensalidadeService'
 import { pagamentoService } from '../services/pagamentoService'
+import { dependenteService } from '../services/dependenteService'
 import { useToast } from '../contexts/ToastContext'
 import { calcularStatusSocio } from '../utils/statusHelper'
 import { MESES_NOMES, iniciais, validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP } from '../utils/formattingUtils'
@@ -23,6 +25,9 @@ export default function SocioDetalhe() {
   const [form, setForm] = useState(null)
   const [salvo, setSalvo] = useState(false)
   const [modalPagamento, setModalPagamento] = useState(false)
+  const [modalDependente, setModalDependente] = useState(false)
+  const [dependentesSocio, setDependentesSocio] = useState([])
+  const [editingDependente, setEditingDependente] = useState(null)
   const [mensalidades, setMensalidades] = useState([])
   const [pagamentos, setPagamentos] = useState([])
 
@@ -32,8 +37,10 @@ export default function SocioDetalhe() {
       socioService.getById(id),
       mensalidadeService.getAll(),
       pagamentoService.getAll(),
+      // dependents may not be supported by backend; handle rejection later
+      dependenteService.getBySocioId(id).catch(err => { throw { dependentesError: err } })
     ])
-      .then(([socioData, mensalidadesData, pagamentosData]) => {
+      .then(([socioData, mensalidadesData, pagamentosData, dependentesData]) => {
         const socioMensalidades = mensalidadesData.filter(m => m.socio_id === Number(id))
         
         const historicoMapeado = socioMensalidades.map(m => {
@@ -54,6 +61,10 @@ export default function SocioDetalhe() {
 
         setMensalidades(socioMensalidades)
         setPagamentos(pagamentosData)
+        // ensure we only keep dependents that belong to this socio (by socio_titular_id or socio_id)
+        const dependentesArray = Array.isArray(dependentesData) ? dependentesData : []
+        const dependentesFiltrados = dependentesArray.filter(d => Number(d.socio_titular_id ?? d.socio_id) === Number(id))
+        setDependentesSocio(dependentesFiltrados)
 
         const statusAutomatico = calcularStatusSocio(socioData, mensalidadesData)
 
@@ -69,8 +80,62 @@ export default function SocioDetalhe() {
       })
       .catch(err => {
         console.error(err)
-        toast.error(`Erro ao carregar dados do sócio: ${err.message}`)
-        setLoading(false)
+        if (err && err.dependentesError) {
+          // backend probably doesn't expose dependentes endpoint
+          toast.warn('Endpoint de dependentes não disponível no servidor. Tentando obter todos os dependentes e filtrar localmente.')
+          // still try to load socio, mensalidades and pagamentos separately
+          Promise.all([socioService.getById(id), mensalidadeService.getAll(), pagamentoService.getAll()])
+            .then(([socioData, mensalidadesData, pagamentosData]) => {
+              const socioMensalidades = mensalidadesData.filter(m => m.socio_id === Number(id))
+              const historicoMapeado = socioMensalidades.map(m => {
+                const p = pagamentosData.find(pg => pg.mensalidade_id === m.id)
+                return {
+                  id: m.id,
+                  mesNum: m.mes,
+                  anoNum: m.ano,
+                  mes: `${MESES_NOMES[m.mes - 1]}/${m.ano}`,
+                  valor: `R$ ${Number(m.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                  valorNum: Number(m.valor),
+                  status: m.status,
+                  data: p ? p.data_pagamento.split('-').reverse().join('/') : '—',
+                  dataIso: p ? p.data_pagamento : null,
+                  formaPagamento: p ? p.forma_pagamento : null
+                }
+              }).sort((a, b) => b.anoNum - a.anoNum || b.mesNum - a.mesNum)
+
+              setMensalidades(socioMensalidades)
+              setPagamentos(pagamentosData)
+              // try fetching all dependents and filter locally
+              dependenteService.getAll()
+                .then(allDeps => {
+                  const filtered = (Array.isArray(allDeps) ? allDeps : []).filter(d => Number(d.socio_titular_id ?? d.socio_id) === Number(id))
+                  setDependentesSocio(filtered)
+                })
+                .catch(_ => {
+                  // ignore; already warned
+                })
+
+              const statusAutomatico = calcularStatusSocio(socioData, mensalidadesData)
+
+              const formObject = {
+                ...socioData,
+                mensalidade: statusAutomatico,
+                pagamentos: historicoMapeado
+              }
+
+              setOriginal(formObject)
+              setForm(formObject)
+              setLoading(false)
+            })
+            .catch(e => {
+              console.error(e)
+              toast.error(`Erro ao carregar dados do sócio: ${e.message || e}`)
+              setLoading(false)
+            })
+        } else {
+          toast.error(`Erro ao carregar dados do sócio: ${err.message || err}`)
+          setLoading(false)
+        }
       })
   }, [id, toast])
 
@@ -163,6 +228,46 @@ export default function SocioDetalhe() {
   function cancelar() {
     setForm({ ...original })
     setSalvo(false)
+  }
+
+  function abrirModalNovoDependente() {
+    setEditingDependente(null)
+    setModalDependente(true)
+  }
+
+  function abrirModalEditarDependente(dep) {
+    setEditingDependente(dep)
+    setModalDependente(true)
+  }
+
+  async function handleSalvarDependenteModal(payload) {
+    // payload expected: nome, cpf, telefone, data_nascimento, dancarino
+    try {
+      if (editingDependente && editingDependente.id) {
+        await dependenteService.update(editingDependente.id, { ...editingDependente, ...payload })
+        toast.success('Dependente atualizado com sucesso')
+      } else {
+        await dependenteService.create({ socio_id: Number(id), ...payload })
+        toast.success('Dependente cadastrado com sucesso')
+      }
+      setModalDependente(false)
+      carregarDados()
+    } catch (err) {
+      console.error(err)
+      toast.error(`Erro ao salvar dependente: ${err.message || err}`)
+    }
+  }
+
+  async function handleDeletarDependente(depId) {
+    if (!confirm('Deseja realmente excluir este dependente?')) return
+    try {
+      await dependenteService.delete(depId)
+      toast.success('Dependente excluído')
+      carregarDados()
+    } catch (err) {
+      console.error(err)
+      toast.error(`Erro ao excluir dependente: ${err.message || err}`)
+    }
   }
 
   async function handleSalvarPagamento(payload) {
@@ -421,6 +526,38 @@ export default function SocioDetalhe() {
           </div>
         </section>
 
+        {/* Dependentes do sócio */}
+        <section className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6 p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-[#1a3560] text-xl font-bold">Dependentes</h2>
+            <button
+              onClick={abrirModalNovoDependente}
+              className="border border-blue-300 text-blue-600 bg-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-50 transition-colors"
+            >
+              + Adicionar Dependente
+            </button>
+          </div>
+
+          {dependentesSocio.length === 0 ? (
+            <p className="text-sm text-gray-500">Nenhum dependente cadastrado para este sócio.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {dependentesSocio.map(d => (
+                <div key={d.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex justify-between items-start gap-4">
+                  <div>
+                    <h4 className="font-bold text-[#1a3560]">{d.nome}</h4>
+                    <p className="text-sm text-gray-600">Nascimento: {d.data_nascimento || d.nascimento || '—'}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => abrirModalEditarDependente(d)} className="bg-white border border-slate-300 text-gray-700 px-3 py-2 rounded-xl text-sm">Editar</button>
+                    <button onClick={() => handleDeletarDependente(d.id)} className="bg-red-500 text-white px-3 py-2 rounded-xl text-sm">Excluir</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         {/* Histórico de Pagamentos */}
         <section className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6 overflow-hidden">
           <div className="bg-[#eef1f8] px-6 py-4 border-b border-blue-100 flex justify-between items-center gap-3 flex-wrap">
@@ -494,6 +631,16 @@ export default function SocioDetalhe() {
           pagamentos={pagamentos}
           onFechar={() => setModalPagamento(false)}
           onSalvar={handleSalvarPagamento}
+        />
+      )}
+
+      {modalDependente && (
+        <ModalDependente
+          socioMatricula={form.matricula || String(form.id)}
+          socioEndereco={form.endereco}
+          initial={editingDependente}
+          onFechar={() => { setModalDependente(false); setEditingDependente(null) }}
+          onSalvar={handleSalvarDependenteModal}
         />
       )}
     </Layout>
