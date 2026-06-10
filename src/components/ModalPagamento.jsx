@@ -43,8 +43,8 @@ export default function ModalPagamento({
   onSalvar
 }) {
   const [mes, setMes] = useState(() => mesPadrao ?? MESES_OPCOES[0])
-  const [valor, setValor] = useState('R$ 80,00')
-  const [data, setData] = useState(hojeISO())
+  const [valor, setValor] = useState('')
+  const [data, setData] = useState('')
   const [formaPagamento, setFormaPagamento] = useState('Transferencia')
   const [confirmado, setConfirmado] = useState(false)
   const [salvando, setSalvando] = useState(false)
@@ -86,8 +86,8 @@ export default function ModalPagamento({
         setValor(`R$ ${Number(m.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`)
         statusCalculado = m.status
       } else {
-        setValor('R$ 80,00')
-        
+        setValor('')
+
         // Calcular status presumido se não existir registro de mensalidade
         const hoje = new Date()
         const atualAno = hoje.getFullYear()
@@ -111,7 +111,7 @@ export default function ModalPagamento({
           statusCalculado = 'Pendente'
         }
       }
-      setData(hojeISO())
+      setData('')
       setFormaPagamento('Transferencia')
       setIsAlreadyPaid(false)
     }

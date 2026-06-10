@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useToast } from '../contexts/ToastContext'
+import { formatarCPF } from '../utils/formattingUtils'
 
 const campoVazio = { nome: '', cpf: '' }
 
@@ -49,23 +50,13 @@ export default function ModalDependente({ onFechar, onSalvar, socioMatricula = '
               type="text"
               placeholder="000.000.000-00"
               value={form.cpf}
-              onChange={e => setField('cpf', e.target.value)}
+              maxLength={14}
+              onChange={e => setField('cpf', formatarCPF(e.target.value))}
               className={inputClass}
             />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold">Telefone</label>
-            <input
-              type="text"
-              placeholder="(00) 00000-0000"
-              value={form.telefone}
-              onChange={e => setField('telefone', e.target.value)}
-              className={inputClass}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
+<div className="flex flex-col gap-2">
             <label className="text-sm font-bold">Data de Nascimento</label>
             <input
               type="date"
