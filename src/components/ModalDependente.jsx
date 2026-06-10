@@ -55,18 +55,7 @@ export default function ModalDependente({ onFechar, onSalvar, socioMatricula = '
             />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold">Telefone</label>
-            <input
-              type="text"
-              placeholder="(00) 00000-0000"
-              value={form.telefone}
-              onChange={e => setField('telefone', formatarTelefone(e.target.value))}
-              className={inputClass}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
+<div className="flex flex-col gap-2">
             <label className="text-sm font-bold">Data de Nascimento</label>
             <input
               type="date"

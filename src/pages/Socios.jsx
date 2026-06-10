@@ -55,7 +55,10 @@ export default function Socios() {
 
   const filtrados = useMemo(() => {
     return dadosIniciais.filter(s => {
-      const matchBusca = (s.nome || '').toLowerCase().includes(busca.toLowerCase()) || (s.cpf || '').includes(busca)
+      const buscaDigitos = busca.replace(/\D/g, '')
+      const cpfDigitos = (s.cpf || '').replace(/\D/g, '')
+      const matchCpf = buscaDigitos.length > 0 ? cpfDigitos.includes(buscaDigitos) : (s.cpf || '').includes(busca)
+      const matchBusca = (s.nome || '').toLowerCase().includes(busca.toLowerCase()) || matchCpf
       const matchCategoria = categoria === 'Todas as Categorias' || s.status === categoria
       const matchStatus = status === 'Todos os Status' || s.mensalidade === status
       const matchInvernada = invernada === 'Todas as Invernadas' || s.invernada === invernada
