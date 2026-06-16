@@ -194,6 +194,52 @@ O arquivo `.env` já está no `.gitignore` por padrão — **nunca comite creden
 
 ---
 
+## Deploy no servidor da IFSul (Apache)
+
+O frontend é uma SPA e precisa de passos específicos para funcionar no Apache.
+
+### 1. Gerar o build de produção
+
+Na raiz do projeto:
+
+```bash
+npm install
+npm run build
+```
+
+Isso gera a pasta `dist/` com os arquivos estáticos prontos para produção.
+
+### 2. Enviar para o servidor
+
+Copie o **conteúdo** da pasta `dist/` para o diretório `ctg-raizes/` no servidor Apache:
+
+```
+/var/www/html/ctg-raizes/   ← pasta no servidor
+```
+
+A URL resultante será:
+```
+http://extensao.charqueadas.ifsul.edu.br/ctg-raizes/
+```
+
+### 3. Por que o `.htaccess` é necessário
+
+O arquivo `public/.htaccess` (copiado automaticamente para o `dist/` pelo Vite) instrui o Apache a redirecionar todas as rotas para o `index.html`. Sem ele, acessar `/ctg-raizes/socios` diretamente no navegador retorna 404.
+
+### 4. URL da API em produção
+
+O arquivo `.env.production` já está configurado com a URL do backend da IFSul:
+
+```ini
+VITE_API_URL=http://php.charqueadas.ifsul.edu.br/back-ctgraizes/index.php/api
+```
+
+O Vite injeta essa variável automaticamente no build de produção — não é necessário nenhuma configuração extra no servidor.
+
+> Para desenvolvimento local, o proxy configurado em `vite.config.js` redireciona `/api` para `http://localhost:8000` automaticamente ao rodar `npm run dev`.
+
+---
+
 ## Convenções de código
 
 - **JavaScript puro (JSX)** — sem TypeScript.
