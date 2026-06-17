@@ -183,9 +183,19 @@ export default function Socios() {
                         title="Clique para ver detalhes"
                       >
                         <td className="py-4 px-2.5 border-b border-gray-100">
-                          <div className="w-[42px] h-[42px] rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
-                            {iniciais(s.nome)}
-                          </div>
+                          <div className="w-[42px] h-[42px] rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
+                          {s.foto ? (
+                            <img
+                              src={s.foto}
+                              alt={s.nome}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-blue-600 font-bold text-sm">
+                              {iniciais(s.nome)}
+                            </span>
+                          )}
+                        </div>
                         </td>
                         <td className="py-4 px-2.5 border-b border-gray-100 text-sm font-medium">{s.nome}</td>
                         <td className="py-4 px-2.5 border-b border-gray-100 text-sm text-gray-500">{s.cpf}</td>

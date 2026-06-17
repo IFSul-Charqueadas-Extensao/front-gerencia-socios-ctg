@@ -32,6 +32,7 @@ export function mapBackendToFrontendSocio(b) {
   return {
     id: Number(b.id),
     nome: b.nome,
+    foto: b.foto || "",
     cpf: b.cpf,
     email: b.email || "",
     telefone: b.telefone,
@@ -74,6 +75,8 @@ export function mapFrontendToBackendSocio(f) {
   return {
     nome: f.nome,
     cpf: f.cpf,
+    foto: f.foto,
+    email: f.email || "",
     telefone: f.telefone || "",
     foto: f.foto || "",
     identidade: f.identidade || "Não informada",
