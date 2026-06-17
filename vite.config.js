@@ -2,11 +2,25 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+// Remove o atributo crossorigin dos assets gerados.
+// Necessario porque o servidor usa HTTP Basic Auth, e requests com
+// crossorigin falham (401) nesse cenario, deixando a pagina em branco.
+function stripCrossorigin() {
+  return {
+    name: 'strip-crossorigin',
+    enforce: 'post',
+    transformIndexHtml(html) {
+      return html.replace(/ crossorigin/g, '')
+    },
+  }
+}
+
 export default defineConfig({
   base: '/ctg-raizes/',
   plugins: [
     tailwindcss(),
     react(),
+    stripCrossorigin(),
   ],
   server: {
     host: '0.0.0.0', // gemini - Força o Vite a escutar todas as interfaces de rede, não só o localhost
@@ -29,6 +43,8 @@ export default defineConfig({
     target: 'es2015',
     cssCodeSplit: true,
     chunkSizeWarningLimit: 500,
+    // Desativa os <link rel="modulepreload" crossorigin> que falham sob Basic Auth
+    modulePreload: false,
     rollupOptions: {
       output: {
         // Separa vendor libs em chunks dedicados para melhor cache e lazy loading
