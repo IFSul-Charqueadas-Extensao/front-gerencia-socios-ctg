@@ -1,8 +1,30 @@
-Options -MultiViews
-RewriteEngine On
+<IfModule mod_rewrite.c>
+  RewriteEngine On
 
-# Redireciona tudo que nao for arquivo ou pasta real para o index.html
-# Necessario para o React Router funcionar no Apache (SPA routing)
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.html [L]
+  # 1. Se o arquivo ou diretório existir fisicamente, serve ele direto (CSS, JS, Imagens)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # 2. Se NÃO existir (rotas do React), redireciona dinamicamente para o index.html da mesma pasta
+  # O Apache vai descobrir o caminho relativo atual e injetar no index.html automaticamente
+  RewriteRule ^(.*)$ index.html [L]
+</IfModule>
+
+# --- CORREÇÃO PARA O MODULEPRELOAD (Garante que o navegador aceite o JS do Vite) ---
+<IfModule mod_mime.c>
+  AddType application/javascript .js
+  AddType application/javascript .mjs
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|mjs)$">
+    Header set Content-Type "application/javascript"
+  </FilesMatch>
+</IfModule>
+# --- LIBERAÇÃO DO BASIC AUTH PARA ARQUIVOS ESTÁTICOS ---
+# Permite que o navegador baixe o layout (JS, CSS, Imagens) sem barrar na senha
+<FilesMatch "\.(js|mjs|css|svg|png|jpe?g|gif|ico|woff2?)$">
+    Satisfy Any
+    Allow from all
+</FilesMatch>
