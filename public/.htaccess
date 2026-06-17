@@ -25,6 +25,13 @@
 # --- LIBERAÇÃO DO BASIC AUTH PARA ARQUIVOS ESTÁTICOS ---
 # Permite que o navegador baixe o layout (JS, CSS, Imagens) sem barrar na senha
 <FilesMatch "\.(js|mjs|css|svg|png|jpe?g|gif|ico|woff2?)$">
-    Satisfy Any
-    Allow from all
+    # Apache 2.4 (sintaxe moderna)
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    # Apache 2.2 (sintaxe antiga)
+    <IfModule !mod_authz_core.c>
+        Satisfy Any
+        Allow from all
+    </IfModule>
 </FilesMatch>
