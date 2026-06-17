@@ -22,3 +22,9 @@
     Header set Content-Type "application/javascript"
   </FilesMatch>
 </IfModule>
+# --- LIBERAÇÃO DO BASIC AUTH PARA ARQUIVOS ESTÁTICOS ---
+# Permite que o navegador baixe o layout (JS, CSS, Imagens) sem barrar na senha
+<FilesMatch "\.(js|mjs|css|svg|png|jpe?g|gif|ico|woff2?)$">
+    Satisfy Any
+    Allow from all
+</FilesMatch>
