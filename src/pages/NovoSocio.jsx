@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload } from 'lucide-react'
+import { SendToBack, Upload } from 'lucide-react'
 import Layout from '../components/Layout'
 import ModalDependente from '../components/ModalDependente'
 import { INVERNADAS } from '../data/constants'
@@ -15,13 +15,13 @@ export default function NovoSocio() {
   const toast = useToast()
 
   const [form, setForm] = useState({
-    nome: '', cpf: '', data_nascimento: '', telefone: '', email: '',
+    nome: '', foto: '', cpf: '', data_nascimento: '', telefone: '', email: '',
     logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '',
     status: 'Ativo', mensalidade: 'Pendente',
     invernada: 'Nenhuma', numeroDependentes: 0,
     dancarino: false,
   })
-
+  const [foto, setFoto] = useState('');
   const [dependentes, setDependentes] = useState([])
   const [modalAberto, setModalAberto] = useState(false)
   const [confirmarCancelamento, setConfirmarCancelamento] = useState(false)
@@ -39,6 +39,29 @@ export default function NovoSocio() {
     setForm(prev => ({ ...prev, numeroDependentes: novo.length }))
     setModalAberto(false)
   }
+
+  function handleFotoChange(e) {
+    const arquivo = e.target.files?.[0];
+    if (!arquivo) return;
+
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      const base64 = reader.result;
+
+      setFoto(base64);
+
+      setForm(prev => ({
+        ...prev,
+        foto: base64
+      }));
+    };
+
+    reader.readAsDataURL(arquivo);
+  }
+
+
+  
 
   function cadastrar() {
     if (!form.nome || !form.cpf || !form.data_nascimento || !form.telefone || !form.email || !form.logradouro || !form.numero || !form.bairro || !form.cidade || !form.estado || !form.cep) {
@@ -116,15 +139,36 @@ export default function NovoSocio() {
 
             {/* Foto */}
             <div className="flex items-center gap-5 mb-6 flex-wrap">
-              <div className="w-[90px] h-[90px] rounded-full bg-blue-50 border-2 border-dashed border-blue-300 flex items-center justify-center text-blue-400 shrink-0">
+            <div className="w-[90px] h-[90px] rounded-full bg-blue-50 border-2 border-dashed border-blue-300 flex items-center justify-center text-blue-400 shrink-0 overflow-hidden">
+              {foto ? (
+                <img
+                  src={foto}
+                  alt="Prévia da foto"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
                 <Upload size={28} />
-              </div>
-              <div className="flex-1">
-                <label className="text-sm font-bold block mb-2">Foto do Sócio</label>
-                <input type="file" accept="image/*" className="text-sm" disabled={cadastrando} />
-                <small className="text-gray-500 block mt-1">Formatos aceitos: JPG, PNG, GIF</small>
-              </div>
+              )}
             </div>
+
+            <div className="flex-1">
+              <label className="text-sm font-bold block mb-2">
+                Foto do Sócio
+              </label>
+
+              <input
+                type="file"
+                accept="image/*"
+                className="text-sm"
+                disabled={cadastrando}
+                onChange={handleFotoChange}
+              />
+
+              <small className="text-gray-500 block mt-1">
+                Formatos aceitos: JPG, PNG, GIF
+              </small>
+            </div>
+          </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2 md:col-span-2">

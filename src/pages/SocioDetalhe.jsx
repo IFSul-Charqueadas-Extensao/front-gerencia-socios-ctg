@@ -30,6 +30,7 @@ export default function SocioDetalhe() {
   const [editingDependente, setEditingDependente] = useState(null)
   const [mensalidades, setMensalidades] = useState([])
   const [pagamentos, setPagamentos] = useState([])
+  
 
   const carregarDados = useCallback(() => {
     setLoading(true)
@@ -360,9 +361,17 @@ export default function SocioDetalhe() {
 
         {/* Cabeçalho do sócio */}
         <div className="bg-white rounded-2xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6 flex items-center gap-6 flex-wrap">
-          <div className="w-[80px] h-[80px] rounded-full bg-[#1a3560] flex items-center justify-center text-white text-2xl font-bold shrink-0">
-            {iniciais(form.nome)}
-          </div>
+          <div className="w-[80px] h-[80px] rounded-full overflow-hidden bg-[#1a3560] flex items-center justify-center text-white text-2xl font-bold shrink-0">
+            {form.foto ? (
+            <img
+              src={form.foto}
+              alt={form.nome}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            iniciais(form.nome)
+          )}
+        </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-[#1a3560] text-3xl font-bold mb-1 truncate">{form.nome}</h1>
             <p className="text-gray-500 text-sm mb-3">CPF: {form.cpf} · Sócio desde {form.data_entrada}</p>
