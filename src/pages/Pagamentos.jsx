@@ -5,6 +5,7 @@ import Layout from '../components/Layout'
 import Badge from '../components/Badge'
 import EmptyState from '../components/EmptyState'
 import ModalPagamento from '../components/ModalPagamento'
+import { useAuth } from '../contexts/AuthContext'
 import { socioService } from '../services/socioService'
 import { mensalidadeService } from '../services/mensalidadeService'
 import { pagamentoService } from '../services/pagamentoService'
@@ -15,6 +16,9 @@ const MESES = gerarMeses()
 
 
 export default function Pagamentos() {
+  const { podeEscrever } = useAuth()
+  const podeRegistrar = podeEscrever('pagamentos')
+
   const toast = useToast()
   const [socios, setSocios] = useState([])
   const [mensalidades, setMensalidades] = useState([])
@@ -358,12 +362,14 @@ export default function Pagamentos() {
                     ) : (
                       <>
                         <Badge color={s.statusMes === 'Atrasado' ? 'red' : 'yellow'}>{s.statusMes}</Badge>
-                        <button
-                          onClick={() => setModalSocio(s)}
-                          className="bg-[#1a3560] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-900 transition-colors cursor-pointer border-none"
-                        >
-                          Registrar
-                        </button>
+                        {podeRegistrar && (
+                          <button
+                            onClick={() => setModalSocio(s)}
+                            className="bg-[#1a3560] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-900 transition-colors cursor-pointer border-none"
+                          >
+                            Registrar
+                          </button>
+                        )}
                       </>
                     )}
                   </div>

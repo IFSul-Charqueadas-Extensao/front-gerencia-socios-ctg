@@ -7,6 +7,7 @@ import EmptyState from '../components/EmptyState'
 import { INVERNADAS } from '../data/constants'
 import { useToast } from '../contexts/ToastContext'
 import { calcularStatusSocio } from '../utils/statusHelper'
+import { useAuth } from '../contexts/AuthContext'
 import { socioService } from '../services/socioService'
 import { mensalidadeService } from '../services/mensalidadeService'
 
@@ -23,6 +24,7 @@ export default function Socios() {
   const navigate = useNavigate()
   const location = useLocation()
   const toast = useToast()
+  const { podeEscrever } = useAuth()
   const [dadosIniciais, setDadosIniciais] = useState([])
   const [loading, setLoading] = useState(true)
   const [ordenacao, setOrdenacao] = useState('Nome (A-Z)')
@@ -101,14 +103,18 @@ export default function Socios() {
               <h1 className="text-[#1a3560] text-3xl font-bold">Sócios</h1>
               <p className="text-gray-500">Gerenciar cadastro de sócios do CTG</p>
             </div>
-            <div className="flex gap-2.5 flex-wrap">
-              <Link
-                to="/socios/novo"
-                className="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-[0_4px_12px_rgba(37,99,235,0.3)] no-underline"
-              >
-                Cadastrar novo sócio
-              </Link>
-            </div>
+            {/* Só quem pode alterar sócios vê a ação de cadastro.
+                A rota e a API barram o acesso de qualquer forma. */}
+            {podeEscrever('socios') && (
+              <div className="flex gap-2.5 flex-wrap">
+                <Link
+                  to="/socios/novo"
+                  className="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-[0_4px_12px_rgba(37,99,235,0.3)] no-underline"
+                >
+                  Cadastrar novo sócio
+                </Link>
+              </div>
+            )}
           </div>
 
           <section className="bg-white rounded-2xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
