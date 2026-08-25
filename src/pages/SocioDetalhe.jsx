@@ -4,6 +4,7 @@ import Layout from '../components/Layout'
 import Badge from '../components/Badge'
 import ModalPagamento from '../components/ModalPagamento'
 import ModalDependente from '../components/ModalDependente'
+import { useAuth } from '../contexts/AuthContext'
 import { INVERNADAS } from '../data/constants'
 import { socioService } from '../services/socioService'
 import { mensalidadeService } from '../services/mensalidadeService'
@@ -24,6 +25,10 @@ export default function SocioDetalhe() {
   const [original, setOriginal] = useState(null)
   const [form, setForm] = useState(null)
   const [salvo, setSalvo] = useState(false)
+  const { podeEscrever } = useAuth()
+  const podeEditarSocio = podeEscrever('socios')
+  const podeRegistrarPagamento = podeEscrever('pagamentos')
+
   const [modalPagamento, setModalPagamento] = useState(false)
   const [modalDependente, setModalDependente] = useState(false)
   const [dependentesSocio, setDependentesSocio] = useState([])
@@ -402,27 +407,27 @@ export default function SocioDetalhe() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="text-sm font-bold">Nome Completo *</label>
-                <input type="text" value={form.nome} onChange={e => setField('nome', e.target.value)} className={inputClass} disabled={saving} />
+                <input type="text" value={form.nome} onChange={e => setField('nome', e.target.value)} className={inputClass} disabled={saving || !podeEditarSocio} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">CPF *</label>
-                <input type="text" value={form.cpf} onChange={e => setField('cpf', formatarCPF(e.target.value))} className={inputClass} maxLength={14} disabled={saving} />
+                <input type="text" value={form.cpf} onChange={e => setField('cpf', formatarCPF(e.target.value))} className={inputClass} maxLength={14} disabled={saving || !podeEditarSocio} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Data de Nascimento</label>
-                <input type="date" value={form.data_nascimento} onChange={e => setField('data_nascimento', e.target.value)} className={inputClass} disabled={saving} />
+                <input type="date" value={form.data_nascimento} onChange={e => setField('data_nascimento', e.target.value)} className={inputClass} disabled={saving || !podeEditarSocio} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Telefone</label>
-                <input type="text" placeholder="(00) 00000-0000" value={form.telefone} onChange={e => setField('telefone', formatarTelefone(e.target.value))} className={inputClass} maxLength={15} disabled={saving} />
+                <input type="text" placeholder="(00) 00000-0000" value={form.telefone} onChange={e => setField('telefone', formatarTelefone(e.target.value))} className={inputClass} maxLength={15} disabled={saving || !podeEditarSocio} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">E-mail</label>
-                <input type="email" value={form.email} onChange={e => setField('email', e.target.value)} className={inputClass} disabled={saving} />
+                <input type="email" value={form.email} onChange={e => setField('email', e.target.value)} className={inputClass} disabled={saving || !podeEditarSocio} />
               </div>
 
               {/* Seção Endereço Detalhado */}
@@ -433,43 +438,43 @@ export default function SocioDetalhe() {
                 <div className="flex flex-col gap-2 md:col-span-3">
                   <label className="text-sm font-bold">Logradouro / Rua *</label>
                   <input type="text" placeholder="Rua, Avenida, etc." value={form.logradouro}
-                    onChange={e => setField('logradouro', e.target.value)} className={inputClass} disabled={saving} />
+                    onChange={e => setField('logradouro', e.target.value)} className={inputClass} disabled={saving || !podeEditarSocio} />
                 </div>
                 <div className="flex flex-col gap-2 col-span-1">
                   <label className="text-sm font-bold">Número *</label>
                   <input type="text" placeholder="123 ou S/N" value={form.numero}
-                    onChange={e => setField('numero', e.target.value)} className={inputClass} disabled={saving} />
+                    onChange={e => setField('numero', e.target.value)} className={inputClass} disabled={saving || !podeEditarSocio} />
                 </div>
                 <div className="flex flex-col gap-2 md:col-span-2">
                   <label className="text-sm font-bold">Complemento</label>
                   <input type="text" placeholder="Apto, Bloco, etc." value={form.complemento}
-                    onChange={e => setField('complemento', e.target.value)} className={inputClass} disabled={saving} />
+                    onChange={e => setField('complemento', e.target.value)} className={inputClass} disabled={saving || !podeEditarSocio} />
                 </div>
                 <div className="flex flex-col gap-2 md:col-span-2">
                   <label className="text-sm font-bold">Bairro *</label>
                   <input type="text" placeholder="Bairro" value={form.bairro}
-                    onChange={e => setField('bairro', e.target.value)} className={inputClass} disabled={saving} />
+                    onChange={e => setField('bairro', e.target.value)} className={inputClass} disabled={saving || !podeEditarSocio} />
                 </div>
                 <div className="flex flex-col gap-2 md:col-span-2">
                   <label className="text-sm font-bold">Cidade *</label>
                   <input type="text" placeholder="Cidade" value={form.cidade}
-                    onChange={e => setField('cidade', e.target.value)} className={inputClass} disabled={saving} />
+                    onChange={e => setField('cidade', e.target.value)} className={inputClass} disabled={saving || !podeEditarSocio} />
                 </div>
                 <div className="flex flex-col gap-2 col-span-1">
                   <label className="text-sm font-bold">Estado *</label>
                   <input type="text" placeholder="UF" maxLength={2} value={form.estado}
-                    onChange={e => setField('estado', e.target.value.toUpperCase())} className={inputClass} disabled={saving} />
+                    onChange={e => setField('estado', e.target.value.toUpperCase())} className={inputClass} disabled={saving || !podeEditarSocio} />
                 </div>
                 <div className="flex flex-col gap-2 col-span-1">
                   <label className="text-sm font-bold">CEP *</label>
                   <input type="text" placeholder="99999-999" maxLength={9} value={form.cep}
-                    onChange={e => setField('cep', formatarCEP(e.target.value))} className={inputClass} disabled={saving} />
+                    onChange={e => setField('cep', formatarCEP(e.target.value))} className={inputClass} disabled={saving || !podeEditarSocio} />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Categoria</label>
-                <select value={form.status} onChange={e => setField('status', e.target.value)} className={inputClass} disabled={saving}>
+                <select value={form.status} onChange={e => setField('status', e.target.value)} className={inputClass} disabled={saving || !podeEditarSocio}>
                   <option>Ativo</option>
                   <option>Inativo</option>
                 </select>
@@ -495,7 +500,7 @@ export default function SocioDetalhe() {
                   value={String(form.dancarino)}
                   onChange={e => setField('dancarino', e.target.value === 'true')}
                   className={inputClass}
-                  disabled={saving}
+                  disabled={saving || !podeEditarSocio}
                 >
                   <option value="true">Sim</option>
                   <option value="false">Não</option>
@@ -505,21 +510,21 @@ export default function SocioDetalhe() {
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Número de Dependentes</label>
                 <input type="number" value={form.dependentes}
-                  onChange={e => setField('dependentes', Number(e.target.value))} className={inputClass} disabled={saving} />
+                  onChange={e => setField('dependentes', Number(e.target.value))} className={inputClass} disabled={saving || !podeEditarSocio} />
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
+            <div className={`flex justify-end gap-3 mt-6 ${podeEditarSocio ? '' : 'hidden'}`}>
               <button
                 onClick={cancelar}
-                disabled={saving}
+                disabled={saving || !podeEditarSocio}
                 className="bg-white border border-slate-300 text-gray-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50"
               >
                 Desfazer alterações
               </button>
               <button
                 onClick={salvar}
-                disabled={saving}
+                disabled={saving || !podeEditarSocio}
                 className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-[0_4px_12px_rgba(37,99,235,0.3)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
               >
                 {saving ? (
@@ -539,12 +544,14 @@ export default function SocioDetalhe() {
         <section className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6 p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-[#1a3560] text-xl font-bold">Dependentes</h2>
-            <button
-              onClick={abrirModalNovoDependente}
-              className="border border-blue-300 text-blue-600 bg-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-50 transition-colors"
-            >
-              + Adicionar Dependente
-            </button>
+            {podeEditarSocio && (
+              <button
+                onClick={abrirModalNovoDependente}
+                className="border border-blue-300 text-blue-600 bg-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-50 transition-colors"
+              >
+                + Adicionar Dependente
+              </button>
+            )}
           </div>
 
           {dependentesSocio.length === 0 ? (
@@ -557,10 +564,12 @@ export default function SocioDetalhe() {
                     <h4 className="font-bold text-[#1a3560]">{d.nome}</h4>
                     <p className="text-sm text-gray-600">Nascimento: {d.data_nascimento || d.nascimento || '—'}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => abrirModalEditarDependente(d)} className="bg-white border border-slate-300 text-gray-700 px-3 py-2 rounded-xl text-sm">Editar</button>
-                    <button onClick={() => handleDeletarDependente(d.id)} className="bg-red-500 text-white px-3 py-2 rounded-xl text-sm">Excluir</button>
-                  </div>
+                  {podeEditarSocio && (
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => abrirModalEditarDependente(d)} className="bg-white border border-slate-300 text-gray-700 px-3 py-2 rounded-xl text-sm">Editar</button>
+                      <button onClick={() => handleDeletarDependente(d.id)} className="bg-red-500 text-white px-3 py-2 rounded-xl text-sm">Excluir</button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -571,12 +580,14 @@ export default function SocioDetalhe() {
         <section className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6 overflow-hidden">
           <div className="bg-[#eef1f8] px-6 py-4 border-b border-blue-100 flex justify-between items-center gap-3 flex-wrap">
             <span className="font-bold text-[#1a3560]">Histórico de Pagamentos</span>
-            <button
-              onClick={() => setModalPagamento(true)}
-              className="bg-[#1a3560] text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-blue-800 transition-colors cursor-pointer shadow-[0_2px_8px_rgba(23,55,183,0.3)]"
-            >
-              + Registrar Pagamento
-            </button>
+            {podeRegistrarPagamento && (
+              <button
+                onClick={() => setModalPagamento(true)}
+                className="bg-[#1a3560] text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-blue-800 transition-colors cursor-pointer shadow-[0_2px_8px_rgba(23,55,183,0.3)]"
+              >
+                + Registrar Pagamento
+              </button>
+            )}
           </div>
           <div className="p-6">
 
