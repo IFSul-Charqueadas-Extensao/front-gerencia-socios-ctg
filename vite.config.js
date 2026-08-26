@@ -16,7 +16,7 @@ function stripCrossorigin() {
 }
 
 export default defineConfig({
-  base: '/',
+  base: '/ctg-raizes/',
   plugins: [
     tailwindcss(),
     react(),
