@@ -16,14 +16,12 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # 1. Navega até a pasta do repositório no servidor
             cd /home/ti/site-php/www/front-gerencia-socios-ctg
-
-            # 2. Baixa as atualizações do código-fonte
             git pull origin main
-
-            # 3. Instala pacotes novos
             npm install
-
-            # 4. Compila o projeto otimizado para produção (Vite)
             npm run build
+            
+            # Cria a pasta final se não existir, limpa ela e joga o código novo lá
+            mkdir -p /home/ti/site-php/www/ctg-raizes
+            rm -rf /home/ti/site-php/www/ctg-raizes/*
+            cp -r dist/* /home/ti/site-php/www/ctg-raizes/
