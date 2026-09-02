@@ -1,12 +1,19 @@
-name: CD Pipeline Frontend
+name: CD Pipeline Frontend CTG Raízes
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch: # Permite disparo manual
+
+# Evita múltiplos deploys simultâneos
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    name: 🚀 Deploy Frontend em Produção
     runs-on: ubuntu-latest
     steps:
       - name: Executar Deploy via SSH
@@ -15,13 +22,57 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: GITHUB_SHA,GITHUB_REF_NAME
+          script_stop: true # Interrompe imediatamente se algum comando falhar
           script: |
-            cd /home/ti/site-php/www/front-gerencia-socios-ctg
-            git pull origin main
-            npm install
+            set -euo pipefail
+
+            echo "=================================================="
+            echo "🚀 Iniciando Deploy Frontend - Commit: ${GITHUB_SHA::7} (${GITHUB_REF_NAME})"
+            echo "=================================================="
+
+            FRONT_DIR="/home/ti/site-php/www/front-gerencia-socios-ctg"
+            DEST_DIR="/home/ti/site-php/www/ctg-raizes"
+
+            # 1. Verifica se a pasta do projeto existe
+            if [ ! -d "$FRONT_DIR" ]; then
+              echo "❌ Erro: Diretório $FRONT_DIR não encontrado no servidor!"
+              exit 1
+            fi
+
+            cd "$FRONT_DIR"
+
+            # 2. Sincronização limpa do Git (descarta mudanças locais que causam erro de merge)
+            echo "📥 Atualizando repositório do frontend..."
+            git fetch origin main
+            git reset --hard origin/main
+            git clean -fd
+
+            # 3. Instalação de dependências
+            echo "📦 Instalando dependências..."
+            npm install --no-audit --no-fund
+
+            # 4. Compilação da aplicação (Build)
+            echo "🏗️ Gerando build de produção..."
             npm run build
-            
-            # Cria a pasta final se não existir, limpa ela e joga o código novo lá
-            mkdir -p /home/ti/site-php/www/ctg-raizes
-            rm -rf /home/ti/site-php/www/ctg-raizes/*
-            cp -r dist/* /home/ti/site-php/www/ctg-raizes/
+
+            # 5. Validação da build
+            if [ ! -f "dist/index.html" ]; then
+              echo "❌ Erro: Falha na build! O arquivo dist/index.html não foi gerado."
+              exit 1
+            fi
+
+            # 6. Publicação atômica dos arquivos no diretório final
+            echo "📂 Publicando arquivos em $DEST_DIR..."
+            mkdir -p "$DEST_DIR"
+            rm -rf "$DEST_DIR"/*
+            cp -r dist/* "$DEST_DIR"/
+
+            # 7. Ajuste de permissões para o servidor web
+            echo "🔒 Ajustando permissões de arquivos..."
+            chmod -R 755 "$DEST_DIR" || true
+
+            echo "=================================================="
+            echo "✅ Deploy do Frontend finalizado com sucesso!"
+            echo "=================================================="
+
