@@ -12,7 +12,7 @@ import { pagamentoService } from '../services/pagamentoService'
 import { dependenteService } from '../services/dependenteService'
 import { useToast } from '../contexts/ToastContext'
 import { calcularStatusSocio } from '../utils/statusHelper'
-import { MESES_NOMES, iniciais, validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP } from '../utils/formattingUtils'
+import { MESES_NOMES, iniciais, validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP, formatDateBR } from '../utils/formattingUtils'
 
 
 export default function SocioDetalhe() {
@@ -43,8 +43,7 @@ export default function SocioDetalhe() {
       socioService.getById(id),
       mensalidadeService.getAll(),
       pagamentoService.getAll(),
-      // dependents may not be supported by backend; handle rejection later
-      dependenteService.getBySocioId(id).catch(err => { throw { dependentesError: err } })
+      dependenteService.getBySocioId(id)
     ])
       .then(([socioData, mensalidadesData, pagamentosData, dependentesData]) => {
         const socioMensalidades = mensalidadesData.filter(m => m.socio_id === Number(id))
@@ -67,7 +66,8 @@ export default function SocioDetalhe() {
 
         setMensalidades(socioMensalidades)
         setPagamentos(pagamentosData)
-        // ensure we only keep dependents that belong to this socio (by socio_titular_id or socio_id)
+        // o back-end já filtra por socio_titular_id, mas mantemos a
+        // checagem aqui como segurança extra
         const dependentesArray = Array.isArray(dependentesData) ? dependentesData : []
         const dependentesFiltrados = dependentesArray.filter(d => Number(d.socio_titular_id ?? d.socio_id) === Number(id))
         setDependentesSocio(dependentesFiltrados)
@@ -86,62 +86,8 @@ export default function SocioDetalhe() {
       })
       .catch(err => {
         console.error(err)
-        if (err && err.dependentesError) {
-          // backend probably doesn't expose dependentes endpoint
-          toast.warn('Endpoint de dependentes não disponível no servidor. Tentando obter todos os dependentes e filtrar localmente.')
-          // still try to load socio, mensalidades and pagamentos separately
-          Promise.all([socioService.getById(id), mensalidadeService.getAll(), pagamentoService.getAll()])
-            .then(([socioData, mensalidadesData, pagamentosData]) => {
-              const socioMensalidades = mensalidadesData.filter(m => m.socio_id === Number(id))
-              const historicoMapeado = socioMensalidades.map(m => {
-                const p = pagamentosData.find(pg => pg.mensalidade_id === m.id)
-                return {
-                  id: m.id,
-                  mesNum: m.mes,
-                  anoNum: m.ano,
-                  mes: `${MESES_NOMES[m.mes - 1]}/${m.ano}`,
-                  valor: `R$ ${Number(m.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-                  valorNum: Number(m.valor),
-                  status: m.status,
-                  data: p ? p.data_pagamento.split('-').reverse().join('/') : '—',
-                  dataIso: p ? p.data_pagamento : null,
-                  formaPagamento: p ? p.forma_pagamento : null
-                }
-              }).sort((a, b) => b.anoNum - a.anoNum || b.mesNum - a.mesNum)
-
-              setMensalidades(socioMensalidades)
-              setPagamentos(pagamentosData)
-              // try fetching all dependents and filter locally
-              dependenteService.getAll()
-                .then(allDeps => {
-                  const filtered = (Array.isArray(allDeps) ? allDeps : []).filter(d => Number(d.socio_titular_id ?? d.socio_id) === Number(id))
-                  setDependentesSocio(filtered)
-                })
-                .catch(_ => {
-                  // ignore; already warned
-                })
-
-              const statusAutomatico = calcularStatusSocio(socioData, mensalidadesData)
-
-              const formObject = {
-                ...socioData,
-                mensalidade: statusAutomatico,
-                pagamentos: historicoMapeado
-              }
-
-              setOriginal(formObject)
-              setForm(formObject)
-              setLoading(false)
-            })
-            .catch(e => {
-              console.error(e)
-              toast.error(`Erro ao carregar dados do sócio: ${e.message || e}`)
-              setLoading(false)
-            })
-        } else {
-          toast.error(`Erro ao carregar dados do sócio: ${err.message || err}`)
-          setLoading(false)
-        }
+        toast.error(`Erro ao carregar dados do sócio: ${err.message || err}`)
+        setLoading(false)
       })
   }, [id, toast])
 
@@ -554,6 +500,12 @@ export default function SocioDetalhe() {
             )}
           </div>
 
+          {form.status === 'Inativo' && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-gray-100 border border-gray-200 text-gray-600 text-sm">
+              Este sócio está com a sociedade encerrada, por isso todos os dependentes abaixo também aparecem como <strong>Inativo</strong> automaticamente.
+            </div>
+          )}
+
           {dependentesSocio.length === 0 ? (
             <p className="text-sm text-gray-500">Nenhum dependente cadastrado para este sócio.</p>
           ) : (
@@ -561,8 +513,18 @@ export default function SocioDetalhe() {
               {dependentesSocio.map(d => (
                 <div key={d.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex justify-between items-start gap-4">
                   <div>
-                    <h4 className="font-bold text-[#1a3560]">{d.nome}</h4>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-bold text-[#1a3560]">{d.nome}</h4>
+                      <Badge color={d.status === 'Inativo' ? 'gray' : 'green'}>{d.status || 'Ativo'}</Badge>
+                    </div>
                     <p className="text-sm text-gray-600">Nascimento: {d.data_nascimento || d.nascimento || '—'}</p>
+                    {d.data_maioridade && (
+                      <p className="text-xs text-gray-400">
+                        {d.status === 'Inativo'
+                          ? `Maioridade atingida em ${formatDateBR(d.data_maioridade)}`
+                          : `Inativa automaticamente em ${formatDateBR(d.data_maioridade)}`}
+                      </p>
+                    )}
                   </div>
                   {podeEditarSocio && (
                     <div className="flex items-center gap-2">

@@ -8,15 +8,9 @@ export const dependenteService = {
   },
 
   async getBySocioId(socioId) {
-    // try query param
-    try {
-      const data = await apiRequest(`/dependentes?socio_id=${socioId}`)
-      return Array.isArray(data) ? data.map(mapBackendToFrontendDependente) : []
-    } catch (err) {
-      // fallback to nested route
-      const data = await apiRequest(`/socios/${socioId}/dependentes`)
-      return Array.isArray(data) ? data.map(mapBackendToFrontendDependente) : []
-    }
+    // O back-end filtra diretamente via query string (Repository\DependenteRepository::findBySocioTitular)
+    const data = await apiRequest(`/dependentes?socio_titular_id=${socioId}`)
+    return Array.isArray(data) ? data.map(mapBackendToFrontendDependente) : []
   },
 
   async create(dep) {
