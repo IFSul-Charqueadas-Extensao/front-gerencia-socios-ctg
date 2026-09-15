@@ -31,12 +31,12 @@ export function exportarExcel(resultado, toast) {
   // Injetar informações de cabeçalho do relatório e filtros no Excel
   csvContent += `Relatório CTG;${resultado.tipo.toUpperCase()}\n`
   csvContent += `Data de Exportação;${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}\n`
-  csvContent += `Filtros;Situação: ${resultado.situacao} | Invernada: ${resultado.invernada} | Pagamento: ${resultado.pagamento} | ${descFiltroTemporal}\n\n`
+  csvContent += `Filtros;Situação: ${resultado.situacao} | Invernada: ${resultado.invernada} | ${descFiltroTemporal}\n\n`
 
-  if (resultado.tipo === 'Sócios Ativos' || resultado.tipo === 'Sócios Inadimplentes') {
-    csvContent += 'Nome;CPF;Telefone;Situação;Invernada;Status de Pagamento;Data Admissão\n'
+  if (resultado.tipo === 'Sócios') {
+    csvContent += 'Nome;CPF;Telefone;Situação;Invernada;Status Pagamento;Data Admissão\n'
     resultado.dados.forEach(d => {
-      csvContent += `${d.nome};${d.cpf};${d.telefone || '—'};${d.status};${d.invernada};${d.statusPagamento};${d.data_entrada ? d.data_entrada.split('-').reverse().join('/') : '—'}\n`
+      csvContent += `${d.nome};${d.cpf};${d.telefone || '—'};${d.status};${d.invernada};${d.statusPagamento || '—'};${d.data_entrada ? d.data_entrada.split('-').reverse().join('/') : '—'}\n`
     })
   } else if (resultado.tipo === 'Dependentes') {
     csvContent += 'Nome do Dependente;Sócio Titular;CPF;Telefone;Data de Nascimento;Data Entrada;Invernada\n'
@@ -67,7 +67,7 @@ export function exportarWord(resultado, toast) {
 
   const timestamp = getTimestamp()
   let tableHtml = ''
-  if (resultado.tipo === 'Sócios Ativos' || resultado.tipo === 'Sócios Inadimplentes') {
+  if (resultado.tipo === 'Sócios') {
     tableHtml = `
       <table border="1" style="border-collapse:collapse;width:100%;font-family:Arial;margin-top:10px;">
         <tr style="background:#eef1f8;color:#1a3560;font-weight:bold;text-align:left;">
@@ -76,7 +76,7 @@ export function exportarWord(resultado, toast) {
           <th style="padding:8px;border:1px solid #ddd;">Telefone</th>
           <th style="padding:8px;border:1px solid #ddd;">Situação</th>
           <th style="padding:8px;border:1px solid #ddd;">Invernada</th>
-          <th style="padding:8px;border:1px solid #ddd;">Status de Pagamento</th>
+          <th style="padding:8px;border:1px solid #ddd;">Status Pagamento</th>
           <th style="padding:8px;border:1px solid #ddd;">Data Entrada</th>
         </tr>
         ${resultado.dados.map(d => `
@@ -86,7 +86,7 @@ export function exportarWord(resultado, toast) {
             <td style="padding:8px;border:1px solid #ddd;">${d.telefone || '—'}</td>
             <td style="padding:8px;border:1px solid #ddd;">${d.status}</td>
             <td style="padding:8px;border:1px solid #ddd;">${d.invernada}</td>
-            <td style="padding:8px;border:1px solid #ddd;">${d.statusPagamento}</td>
+            <td style="padding:8px;border:1px solid #ddd;">${d.statusPagamento || '—'}</td>
             <td style="padding:8px;border:1px solid #ddd;">${d.data_entrada ? d.data_entrada.split('-').reverse().join('/') : '—'}</td>
           </tr>
         `).join('')}
@@ -164,7 +164,7 @@ export function exportarWord(resultado, toast) {
       </h2>
       <p style="color:#666;font-size:11px;margin-bottom:20px;">
         <strong>Data de Exportação:</strong> ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}<br>
-        <strong>Filtros Aplicados:</strong> Situação: ${resultado.situacao} | Invernada: ${resultado.invernada} | Pagamento: ${resultado.pagamento} | ${descFiltroTemporal}
+        <strong>Filtros Aplicados:</strong> Situação: ${resultado.situacao} | Invernada: ${resultado.invernada} | ${descFiltroTemporal}
       </p>
       ${tableHtml}
     </body>
@@ -220,7 +220,7 @@ export function exportarPDF(resultado, toast) {
     doc.setTextColor(60, 60, 60)
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8.5)
-    const filterText = `Filtros aplicados: Situação: ${resultado.situacao} | Invernada: ${resultado.invernada} | Pagamento: ${resultado.pagamento} | ${descFiltroTemporal}`
+    const filterText = `Filtros aplicados: Situação: ${resultado.situacao} | Invernada: ${resultado.invernada} | ${descFiltroTemporal}`
     
     const splitFilters = doc.splitTextToSize(filterText, pageWidth - (margin * 2))
     doc.text(splitFilters, margin, 33)
@@ -237,7 +237,7 @@ export function exportarPDF(resultado, toast) {
     let tableHeaders = []
     let tableRows = []
 
-    if (resultado.tipo === 'Sócios Ativos' || resultado.tipo === 'Sócios Inadimplentes') {
+    if (resultado.tipo === 'Sócios') {
       tableHeaders = [['Nome', 'CPF', 'Telefone', 'Situação', 'Invernada', 'Status Pagamento', 'Data Entrada']]
       tableRows = resultado.dados.map(d => [
         d.nome,
@@ -245,7 +245,7 @@ export function exportarPDF(resultado, toast) {
         d.telefone || '—',
         d.status,
         d.invernada,
-        d.statusPagamento,
+        d.statusPagamento || '—',
         d.data_entrada ? d.data_entrada.split('-').reverse().join('/') : '—'
       ])
     } else if (resultado.tipo === 'Dependentes') {
