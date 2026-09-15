@@ -14,6 +14,8 @@ import { useToast } from '../contexts/ToastContext'
 import { calcularStatusSocio } from '../utils/statusHelper'
 import { MESES_NOMES, iniciais, validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP, formatDateBR } from '../utils/formattingUtils'
 
+import { cartaoTradService } from "../services/cartaoTradService";
+import { IdCard } from 'lucide-react'
 
 export default function SocioDetalhe() {
   const { id } = useParams()
@@ -35,7 +37,8 @@ export default function SocioDetalhe() {
   const [editingDependente, setEditingDependente] = useState(null)
   const [mensalidades, setMensalidades] = useState([])
   const [pagamentos, setPagamentos] = useState([])
-  
+  const [cartaoTrad, setCartaoTrad] = useState(null);
+  const [gerandoCartao, setGerandoCartao] = useState(false);
 
   const carregarDados = useCallback(() => {
     setLoading(true)
@@ -47,7 +50,7 @@ export default function SocioDetalhe() {
     ])
       .then(([socioData, mensalidadesData, pagamentosData, dependentesData]) => {
         const socioMensalidades = mensalidadesData.filter(m => m.socio_id === Number(id))
-        
+
         const historicoMapeado = socioMensalidades.map(m => {
           const p = pagamentosData.find(pg => pg.mensalidade_id === m.id)
           return {
@@ -91,9 +94,25 @@ export default function SocioDetalhe() {
       })
   }, [id, toast])
 
+  const carregarCartaoDoSocio = useCallback(async () => {
+    try {
+      const cartoes = await cartaoTradService.getAll();
+      const cartaoExistente = cartoes.find(
+        (c) => String(c.socio_id) === String(id)
+      );
+      setCartaoTrad(cartaoExistente || null);
+    } catch (err) {
+      console.error("Erro ao verificar cartão do sócio:", err);
+    }
+  }, [id])
+
   useEffect(() => {
     carregarDados()
   }, [carregarDados])
+
+  useEffect(() => {
+    carregarCartaoDoSocio()
+  }, [carregarCartaoDoSocio])
 
   const statusAutomatico = useMemo(() => {
     if (!form) return 'Pendente'
@@ -224,11 +243,11 @@ export default function SocioDetalhe() {
 
   async function handleSalvarPagamento(payload) {
     const { mesStr, valorStr, dataIso, formaPagamento } = payload
-    
+
     const [mesNome, anoStr] = mesStr.split('/')
     const mesNum = MESES_NOMES.indexOf(mesNome) + 1
     const anoNum = parseInt(anoStr, 10)
-    
+
     const cleanValor = (val) => {
       if (typeof val === 'number') return val
       const str = String(val ?? '80.00')
@@ -290,6 +309,25 @@ export default function SocioDetalhe() {
     }
   }
 
+  async function handleGerarCartao() {
+    setGerandoCartao(true)
+    try {
+      if (!cartaoTrad) {
+        const novoCartao = await cartaoTradService.criarEGerarPdf(id)
+        setCartaoTrad(novoCartao)
+      } else {
+        await cartaoTradService.gerarPdf(cartaoTrad.id)
+      }
+
+      toast.success('Cartão gerado com sucesso!')
+    } catch (erro) {
+      console.error(erro)
+      toast.error(`Erro ao gerar cartão: ${erro.message || 'Erro ao gerar o cartão tradicionalista.'}`)
+    } finally {
+      setGerandoCartao(false)
+    }
+  }
+
   const pagos     = form.pagamentos.filter(p => p.status === 'Pago').length
   const pendentes = form.pagamentos.filter(p => p.status !== 'Pago').length
   const somaPago  = form.pagamentos
@@ -332,6 +370,20 @@ export default function SocioDetalhe() {
                 {statusAutomatico === 'Em dia' ? 'Mensalidade em dia' : statusAutomatico === 'Atrasado' ? 'Mensalidade atrasada' : statusAutomatico === 'Inativo' ? 'Sócio inativo' : 'Mensalidade pendente'}
               </Badge>
               <Badge color="purple">{form.invernada}</Badge>
+
+                <button
+                  onClick={handleGerarCartao}
+                  disabled={gerandoCartao}
+                  className="bg-[#047df6] text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-[#0366d6] transition-colors shadow-[0_4px_12px_rgba(4,125,246,0.3)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <IdCard size={18} />
+                  {gerandoCartao
+                    ? 'Gerando...'
+                    : cartaoTrad
+                    ? 'Reimprimir Cartão Tradicionalista'
+                    : 'Gerar Cartão Tradicionalista (PDF)'}
+                </button>
+
             </div>
           </div>
         </div>
