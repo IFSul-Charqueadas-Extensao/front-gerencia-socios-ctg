@@ -49,6 +49,30 @@ export function formatDateBR(str) {
 }
 
 /**
+ * Calcula a data em que uma pessoa completa 18 anos, a partir da data
+ * de nascimento (ISO YYYY-MM-DD ou BR DD/MM/YYYY). Espelha a mesma
+ * conta feita pela coluna gerada `data_maioridade` no banco
+ * (DATE_ADD(data_nascimento, INTERVAL 18 YEAR)), usada aqui só para
+ * dar um preview imediato no formulário, antes de salvar.
+ */
+export function calcularDataMaioridade(dataNascimentoStr) {
+  if (!dataNascimentoStr) return null
+  const nascimento = parseDate(dataNascimentoStr)
+  if (isNaN(nascimento.getTime())) return null
+
+  const maioridade = new Date(nascimento)
+  maioridade.setFullYear(maioridade.getFullYear() + 18)
+  return maioridade
+}
+
+/** Já completou 18 anos hoje, dada a data de nascimento? */
+export function isMaiorDeIdade(dataNascimentoStr) {
+  const maioridade = calcularDataMaioridade(dataNascimentoStr)
+  if (!maioridade) return false
+  return maioridade <= new Date()
+}
+
+/**
  * Aplica máscara de CPF enquanto o usuário digita.
  * Limita a 11 dígitos e formata como ###.###.###-##
  */

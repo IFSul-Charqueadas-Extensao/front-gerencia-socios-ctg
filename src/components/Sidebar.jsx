@@ -1,17 +1,31 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, FileText, CreditCard, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Users, FileText, CreditCard, Menu, X, ShieldCheck, LogOut } from 'lucide-react'
 import logo from '../../modelos/css/Logo.jpg'
+import { useAuth } from '../contexts/AuthContext'
+import { ROTULO_PAPEL } from '../utils/permissoes'
 
+// `papeis` restringe o item a perfis específicos; sem ele, todos veem
 const links = [
   { to: '/',           label: 'Painel',     icon: LayoutDashboard, end: true },
   { to: '/socios',     label: 'Sócios',     icon: Users },
   { to: '/pagamentos', label: 'Pagamentos', icon: CreditCard },
   { to: '/relatorios', label: 'Relatórios', icon: FileText },
+  { to: '/usuarios',   label: 'Usuários',   icon: ShieldCheck, papeis: ['admin'] },
 ]
+
+function iniciais(nome) {
+  const partes = (nome || '').trim().split(' ')
+  return ((partes[0]?.[0] ?? '') + (partes[partes.length - 1]?.[0] ?? '')).toUpperCase()
+}
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false)
+  const { usuario, papel, logout } = useAuth()
+
+  // esconder um item é conveniência de navegação, não controle de acesso:
+  // as rotas são protegidas por RotaProtegida e a API valida o perfil sempre
+  const linksVisiveis = links.filter(l => !l.papeis || l.papeis.includes(papel))
 
   return (
     <>
@@ -69,7 +83,7 @@ export default function Sidebar() {
           <p className="text-[10px] font-bold uppercase tracking-widest text-white/35 px-3 mb-3">
             Navegação
           </p>
-          {links.map((link) => {
+          {linksVisiveis.map((link) => {
             const { to, label, icon: Icon, end } = link
             return (
               <NavLink
@@ -91,6 +105,28 @@ export default function Sidebar() {
             )
           })}
         </nav>
+
+        {/* Usuário logado */}
+        {usuario && (
+          <div className="px-3 py-3 border-t border-white/10">
+            <div className="flex items-center gap-3 px-2 py-2 min-w-0">
+              <div className="w-9 h-9 shrink-0 rounded-full bg-white/15 flex items-center justify-center text-xs font-bold">
+                {iniciais(usuario.nome)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate">{usuario.nome}</p>
+                <p className="text-[11px] text-white/50">{ROTULO_PAPEL[papel] ?? papel}</p>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              className="mt-1 flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white bg-transparent border-none cursor-pointer transition-all duration-150"
+            >
+              <LogOut size={18} />
+              Sair
+            </button>
+          </div>
+        )}
 
         {/* Rodapé */}
         <div className="px-5 py-4 border-t border-white/10">

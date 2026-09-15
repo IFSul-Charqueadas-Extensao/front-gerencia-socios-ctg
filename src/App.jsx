@@ -1,6 +1,8 @@
-import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { lazy, Suspense, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { ToastProvider } from './contexts/ToastContext'
+import { AuthProvider } from './contexts/AuthContext'
+import RotaProtegida from './components/RotaProtegida'
 
 // Lazy loading: cada página vira um chunk separado carregado sob demanda.
 // jspdf (~1.4 MiB) só será carregado quando o usuário acessar /relatorios.
@@ -10,6 +12,8 @@ const NovoSocio   = lazy(() => import('./pages/NovoSocio'))
 const Relatorios  = lazy(() => import('./pages/Relatorios'))
 const SocioDetalhe = lazy(() => import('./pages/SocioDetalhe'))
 const Pagamentos  = lazy(() => import('./pages/Pagamentos'))
+const Login       = lazy(() => import('./pages/Login'))
+const Usuarios    = lazy(() => import('./pages/Usuarios'))
 
 function PageLoader() {
   return (
@@ -29,20 +33,51 @@ function PageLoader() {
   )
 }
 
+// Leva o usuário ao login quando o api.js detecta que a sessão caiu.
+// Precisa ficar dentro do BrowserRouter para poder usar useNavigate.
+function RedirecionaSessaoExpirada() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const aoExpirar = () => navigate('/login', { replace: true })
+
+    window.addEventListener('ctg:sessao-expirada', aoExpirar)
+    return () => window.removeEventListener('ctg:sessao-expirada', aoExpirar)
+  }, [navigate])
+
+  return null
+}
+
 export default function App() {
   return (
     <ToastProvider>
       <BrowserRouter basename={import.meta.env.BASE_URL}>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/"            element={<Painel />} />
-            <Route path="/socios"      element={<Socios />} />
-            <Route path="/socios/novo" element={<NovoSocio />} />
-            <Route path="/socios/:id"  element={<SocioDetalhe />} />
-            <Route path="/relatorios"  element={<Relatorios />} />
-            <Route path="/pagamentos"  element={<Pagamentos />} />
-          </Routes>
-        </Suspense>
+        <AuthProvider>
+          <RedirecionaSessaoExpirada />
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              {/* Única rota pública */}
+              <Route path="/login" element={<Login />} />
+
+              <Route path="/"            element={<RotaProtegida><Painel /></RotaProtegida>} />
+              <Route path="/socios"      element={<RotaProtegida><Socios /></RotaProtegida>} />
+              <Route path="/socios/novo" element={<RotaProtegida><NovoSocio /></RotaProtegida>} />
+              <Route path="/socios/:id"  element={<RotaProtegida><SocioDetalhe /></RotaProtegida>} />
+              <Route path="/relatorios"  element={<RotaProtegida><Relatorios /></RotaProtegida>} />
+              <Route path="/pagamentos"  element={<RotaProtegida><Pagamentos /></RotaProtegida>} />
+
+              {/* Gestão de usuários: somente admin */}
+              <Route
+                path="/usuarios"
+                element={
+                  <RotaProtegida papeis={['admin']}>
+                    <Usuarios />
+                  </RotaProtegida>
+                }
+              />
+            </Routes>
+          </Suspense>
+        </AuthProvider>
       </BrowserRouter>
     </ToastProvider>
   )
