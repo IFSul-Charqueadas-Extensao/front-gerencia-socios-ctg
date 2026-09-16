@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import { sessao } from "./sessao";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -17,7 +18,13 @@ export const cartaoTradService = {
   },
 
   async gerarPdf(cartaoId) {
-    const res = await fetch(`${BASE_URL}/cartao-tradicionalista/${cartaoId}/pdf`);
+    const token = sessao.getAccessToken();
+
+    const res = await fetch(`${BASE_URL}/cartao-tradicionalista/${cartaoId}/pdf`, {
+      headers: {
+        ...(token ? { "X-Auth-Token": token } : {}),
+      },
+    });
 
     if (!res.ok) {
       let msg = "Erro ao gerar o PDF do cartão.";
