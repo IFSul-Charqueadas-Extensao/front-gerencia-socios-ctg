@@ -6,6 +6,7 @@ import ModalDependente from '../components/ModalDependente'
 import { INVERNADAS } from '../data/constants'
 import { useToast } from '../contexts/ToastContext'
 import { validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP } from '../utils/formattingUtils'
+import { converterFotoParaJpeg } from '../utils/imagemHelper'
 import { socioService } from '../services/socioService'
 import { dependenteService } from '../services/dependenteService'
 import { cartaoTradService } from '../services/cartaoTradService'
@@ -48,20 +49,14 @@ export default function NovoSocio() {
     const arquivo = e.target.files?.[0];
     if (!arquivo) return;
 
-    const reader = new FileReader();
-
-    reader.onloadend = () => {
-      const base64 = reader.result;
-
-      setFoto(base64);
-
-      setForm(prev => ({
-        ...prev,
-        foto: base64
-      }));
-    };
-
-    reader.readAsDataURL(arquivo);
+    // O cartão é gerado no servidor do IFSul, que não tem GD: lá o PDF só
+    // aceita JPEG. Por isso qualquer formato vira JPEG aqui, já reduzido.
+    converterFotoParaJpeg(arquivo)
+      .then(base64 => {
+        setFoto(base64);
+        setForm(prev => ({ ...prev, foto: base64 }));
+      })
+      .catch(() => toast.error('Não foi possível ler a imagem. Tente outro arquivo.'));
   }
 
 
