@@ -10,6 +10,7 @@ import { calcularStatusSocio } from '../utils/statusHelper'
 import { useAuth } from '../contexts/AuthContext'
 import { socioService } from '../services/socioService'
 import { mensalidadeService } from '../services/mensalidadeService'
+import { dependenteService } from '../services/dependenteService'
 
 const INVERNADAS_FILTRO = ['Todas as Invernadas', ...INVERNADAS]
 
@@ -36,12 +37,20 @@ export default function Socios() {
   useEffect(() => {
     Promise.all([      
       socioService.getAll(),
-      mensalidadeService.getAll()
+      mensalidadeService.getAll(),
+      // o back-end não embute a lista de dependentes no JSON do sócio,
+      // então a contagem é calculada aqui a partir do endpoint próprio
+      dependenteService.getAll()
     ])
-      .then(([sociosData, mensalidadesData]) => {
+      .then(([sociosData, mensalidadesData, dependentesData]) => {
         const mapped = sociosData.map(s => {
+          const totalDependentes = dependentesData.filter(
+            d => Number(d.socio_titular_id ?? d.socio_id) === Number(s.id)
+          ).length
+
           return {
             ...s,
+            dependentes: totalDependentes,
             mensalidade: calcularStatusSocio(s, mensalidadesData)
           }
         })

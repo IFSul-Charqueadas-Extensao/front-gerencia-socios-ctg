@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SendToBack, Upload } from 'lucide-react'
+import { SendToBack, Upload, IdCard } from 'lucide-react'
 import Layout from '../components/Layout'
 import ModalDependente from '../components/ModalDependente'
 import { INVERNADAS } from '../data/constants'
@@ -8,6 +8,7 @@ import { useToast } from '../contexts/ToastContext'
 import { validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP } from '../utils/formattingUtils'
 import { socioService } from '../services/socioService'
 import { dependenteService } from '../services/dependenteService'
+import { cartaoTradService } from '../services/cartaoTradService'
 
 
 export default function NovoSocio() {
@@ -26,6 +27,9 @@ export default function NovoSocio() {
   const [modalAberto, setModalAberto] = useState(false)
   const [confirmarCancelamento, setConfirmarCancelamento] = useState(false)
   const [cadastrando, setCadastrando] = useState(false)
+
+  const [socioCriado, setSocioCriado] = useState(null)
+  const [gerandoCartao, setGerandoCartao] = useState(false)
 
   const inputClass = 'w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition-colors'
 
@@ -100,13 +104,15 @@ export default function NovoSocio() {
           } catch (err) {
             console.warn('Falha ao salvar dependentes:', err)
             toast.error('Sócio cadastrado, mas falha ao salvar dependentes no servidor.')
-            navigate('/socios')
+            setCadastrando(false)
+            setSocioCriado(created)
             return
           }
         }
 
         toast.success('Sócio cadastrado com sucesso!')
-        navigate('/socios')
+        setCadastrando(false)
+        setSocioCriado(created)
       })
       .catch(err => {
         console.error(err)
@@ -119,6 +125,27 @@ export default function NovoSocio() {
         } else {
           toast.error(`Erro ao cadastrar sócio: ${err.message}`)
         }
+      })
+  }
+
+  function gerarCartao() {
+    if (!socioCriado) return
+
+    setGerandoCartao(true)
+    cartaoTradService.criarEGerarPdf(socioCriado.id)
+      .then(() => {
+        toast.success('Cartão tradicionalista gerado com sucesso!')
+      })
+      .catch(err => {
+        console.error(err)
+        if (err.isNetworkError) {
+          toast.error(err.message)
+        } else {
+          toast.error(`Erro ao gerar cartão: ${err.message}`)
+        }
+      })
+      .finally(() => {
+        setGerandoCartao(false)
       })
   }
 
@@ -329,50 +356,84 @@ export default function NovoSocio() {
             ))}
           </section>
 
-          {/* Botões */}
-          <div className="flex justify-end gap-3.5 mt-6 mb-6 flex-wrap items-center">
-            {confirmarCancelamento ? (
-              <div className="flex items-center gap-3 flex-wrap bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 w-full">
-                <span className="text-sm text-amber-800 font-medium flex-1">Os dados preenchidos serão perdidos. Tem certeza?</span>
-                <button
-                  onClick={() => navigate('/socios')}
-                  className="bg-amber-500 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-amber-600 transition-colors cursor-pointer"
-                >
-                  Sim, cancelar
-                </button>
-                <button
-                  onClick={() => setConfirmarCancelamento(false)}
-                  className="bg-white border border-slate-300 text-gray-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  Continuar preenchendo
-                </button>
+          {socioCriado && (
+            <section className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-6">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                  <h2 className="text-green-800 text-lg font-bold mb-1">
+                    Sócio cadastrado com sucesso!
+                  </h2>
+                  <p className="text-sm text-green-700">
+                    Você pode gerar agora o Cartão Tradicionalista (PDF) de <strong>{socioCriado.nome}</strong>,
+                    ou fazer isso depois na tela de detalhes do sócio.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={gerarCartao}
+                    disabled={gerandoCartao}
+                    className="bg-[#047df6] text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-[#0366d6] transition-colors shadow-[0_4px_12px_rgba(4,125,246,0.3)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <IdCard size={18} />
+                    {gerandoCartao ? 'Gerando...' : 'Gerar Cartão Tradicionalista (PDF)'}
+                  </button>
+                  <button
+                    onClick={() => navigate('/socios')}
+                    className="bg-white border border-slate-300 text-gray-700 px-5 py-3 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    Ir para lista de sócios
+                  </button>
+                </div>
               </div>
-            ) : (
-              <>
-                <button
-                  onClick={() => setConfirmarCancelamento(true)}
-                  disabled={cadastrando}
-                  className="bg-white border border-slate-300 text-gray-700 px-5 py-3.5 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={cadastrar}
-                  disabled={cadastrando}
-                  className="bg-blue-600 text-white px-5 py-3.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-[0_4px_12px_rgba(37,99,235,0.3)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
-                >
-                  {cadastrando ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Cadastrando...
-                    </>
-                  ) : (
-                    'Cadastrar Sócio'
-                  )}
-                </button>
-              </>
-            )}
-          </div>
+            </section>
+          )}
+
+          {/* Botões */}
+          {!socioCriado && (
+            <div className="flex justify-end gap-3.5 mt-6 mb-6 flex-wrap items-center">
+              {confirmarCancelamento ? (
+                <div className="flex items-center gap-3 flex-wrap bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 w-full">
+                  <span className="text-sm text-amber-800 font-medium flex-1">Os dados preenchidos serão perdidos. Tem certeza?</span>
+                  <button
+                    onClick={() => navigate('/socios')}
+                    className="bg-amber-500 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-amber-600 transition-colors cursor-pointer"
+                  >
+                    Sim, cancelar
+                  </button>
+                  <button
+                    onClick={() => setConfirmarCancelamento(false)}
+                    className="bg-white border border-slate-300 text-gray-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    Continuar preenchendo
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setConfirmarCancelamento(true)}
+                    disabled={cadastrando}
+                    className="bg-white border border-slate-300 text-gray-700 px-5 py-3.5 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={cadastrar}
+                    disabled={cadastrando}
+                    className="bg-blue-600 text-white px-5 py-3.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-[0_4px_12px_rgba(37,99,235,0.3)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {cadastrando ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Cadastrando...
+                      </>
+                    ) : (
+                      'Cadastrar Sócio'
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
 
         </div>
       </main>

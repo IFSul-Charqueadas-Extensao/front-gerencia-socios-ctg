@@ -127,12 +127,8 @@ export default function Relatorios() {
 
       let dadosFiltrados = []
 
-      if (tipoRelatorio === 'Sócios Ativos' || tipoRelatorio === 'Sócios Inadimplentes') {
+      if (tipoRelatorio === 'Sócios') {
         dadosFiltrados = mappedSocios.filter(s => {
-          // Filtro de acordo com o tipo de relatório
-          if (tipoRelatorio === 'Sócios Ativos' && s.status !== 'Ativo') return false
-          if (tipoRelatorio === 'Sócios Inadimplentes' && s.statusPagamento !== 'Atrasado') return false
-
           // Filtro por Situação
           if (situacao === 'Ativo' && s.status !== 'Ativo') return false
           if (situacao === 'Inativo' && s.status !== 'Inativo') return false
@@ -317,14 +313,12 @@ export default function Relatorios() {
             <p className="text-gray-500">Gere relatórios personalizados e exporte em diversos formatos</p>
           </div>
 
-          {/* Configurar Relatório - Ocultado na Impressão */}
           <section className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6 overflow-hidden no-print">
             <div className="bg-[#eef1f8] px-6 py-4 font-bold text-[#1a3560] border-b border-blue-100">
               Configurar Relatório
             </div>
             <div className="p-6">
 
-              {/* Linha 1 de Filtros */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div className="flex flex-col gap-2 md:col-span-2">
                   <label className="text-sm font-bold">Tipo de Relatório *</label>
@@ -335,45 +329,48 @@ export default function Relatorios() {
                     disabled={loading}
                   >
                     <option value="">Selecione o tipo de relatório</option>
-                    <option>Sócios Ativos</option>
-                    <option>Sócios Inadimplentes</option>
+                    <option>Sócios</option>
                     <option>Dependentes</option>
                     <option>Relatório Financeiro</option>
                   </select>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-bold">Situação</label>
-                  <select value={situacao} onChange={e => setSituacao(e.target.value)} className={inputClass} disabled={loading || tipoRelatorio === 'Dependentes' || tipoRelatorio === 'Relatório Financeiro'}>
-                    <option>Todas as Situações</option>
-                    <option>Ativo</option>
-                    <option>Inativo</option>
-                  </select>
-                </div>
+                {tipoRelatorio !== 'Relatório Financeiro' && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-bold">Situação</label>
+                    <select value={situacao} onChange={e => setSituacao(e.target.value)} className={inputClass} disabled={loading || tipoRelatorio === 'Dependentes'}>
+                      <option>Todas as Situações</option>
+                      <option>Ativo</option>
+                      <option>Inativo</option>
+                    </select>
+                  </div>
+                )}
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-bold">Invernada</label>
-                  <select value={invernada} onChange={e => setInvernada(e.target.value)} className={inputClass} disabled={loading || tipoRelatorio === 'Relatório Financeiro'}>
-                    <option value="Todas as Invernadas">Todas as Invernadas</option>
-                    {INVERNADAS.filter(inv => inv !== 'Nenhuma').map(inv => (
-                      <option key={inv} value={inv}>{inv}</option>
-                    ))}
-                  </select>
-                </div>
+                {tipoRelatorio !== 'Relatório Financeiro' && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-bold">Invernada</label>
+                    <select value={invernada} onChange={e => setInvernada(e.target.value)} className={inputClass} disabled={loading}>
+                      <option value="Todas as Invernadas">Todas as Invernadas</option>
+                      {INVERNADAS.filter(inv => inv !== 'Nenhuma').map(inv => (
+                        <option key={inv} value={inv}>{inv}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
-              {/* Linha 2 de Filtros (Filtros Temporais Alternáveis Exclusivos) */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-bold">Status de Pagamento</label>
-                  <select value={pagamento} onChange={e => setPagamento(e.target.value)} className={inputClass} disabled={loading || tipoRelatorio === 'Dependentes' || tipoRelatorio === 'Relatório Financeiro'}>
-                    <option>Todos</option>
-                    <option>Em dia</option>
-                    <option>Atrasado</option>
-                  </select>
-                </div>
+                {tipoRelatorio !== 'Relatório Financeiro' && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-bold">Status de Pagamento</label>
+                    <select value={pagamento} onChange={e => setPagamento(e.target.value)} className={inputClass} disabled={loading || tipoRelatorio === 'Dependentes'}>
+                      <option>Todos</option>
+                      <option>Em dia</option>
+                      <option>Atrasado</option>
+                    </select>
+                  </div>
+                )}
 
-                {/* Alternador de Filtro Temporal para evitar confusão do usuário */}
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-bold">Filtro Temporal</label>
                   <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
@@ -475,7 +472,7 @@ export default function Relatorios() {
                   <strong>Relatório de Emissão:</strong> {resultado.tipo} | <strong>Gerado em:</strong> {new Date().toLocaleDateString('pt-BR')} {new Date().toLocaleTimeString('pt-BR')}
                 </p>
                 <p className="text-xs text-gray-500 m-0">
-                  <strong>Filtros aplicados:</strong> Situação: {resultado.situacao} | Invernada: {resultado.invernada} | Pagamento: {resultado.pagamento} | {resultado.tipoFiltroTemporal === 'mes' ? `Mês de Referência: ${resultado.filtroMes}` : `Período: ${resultado.dataInicio ? resultado.dataInicio.split('-').reverse().join('/') : '—'} a ${resultado.dataFim ? resultado.dataFim.split('-').reverse().join('/') : '—'}`}
+                  <strong>Filtros aplicados:</strong> Situação: {resultado.situacao} | Invernada: {resultado.invernada} | {resultado.tipoFiltroTemporal === 'mes' ? `Mês de Referência: ${resultado.filtroMes}` : `Período: ${resultado.dataInicio ? resultado.dataInicio.split('-').reverse().join('/') : '—'} a ${resultado.dataFim ? resultado.dataFim.split('-').reverse().join('/') : '—'}`}
                 </p>
               </div>
 
@@ -540,7 +537,7 @@ export default function Relatorios() {
                     <div className="overflow-x-auto">
 
                       {/* Tabela de Sócios */}
-                      {(resultado.tipo === 'Sócios Ativos' || resultado.tipo === 'Sócios Inadimplentes') && (
+                      {resultado.tipo === 'Sócios' && (
                         <table className="w-full border-collapse min-w-[600px] print-table">
                           <thead>
                             <tr className="bg-gray-50 border-b border-gray-200">

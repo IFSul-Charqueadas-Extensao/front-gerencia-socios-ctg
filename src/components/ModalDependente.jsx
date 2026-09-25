@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useToast } from '../contexts/ToastContext'
-import { validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP } from '../utils/formattingUtils'
+import { validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP, calcularDataMaioridade, isMaiorDeIdade } from '../utils/formattingUtils'
 
 const campoVazio = { nome: '', cpf: '' }
 
@@ -54,6 +54,16 @@ export default function ModalDependente({ onFechar, onSalvar, socioMatricula = '
               className={inputClass}
             />
           </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold">Telefone</label>
+            <input
+              type="text"
+              placeholder="(00) 00000-0000"
+              value={form.telefone || ''}
+              onChange={e => setField('telefone', formatarTelefone(e.target.value))}
+              className={inputClass}
+            />
+          </div>
 
 <div className="flex flex-col gap-2">
             <label className="text-sm font-bold">Data de Nascimento</label>
@@ -63,6 +73,13 @@ export default function ModalDependente({ onFechar, onSalvar, socioMatricula = '
               onChange={e => setField('data_nascimento', e.target.value)}
               className={inputClass}
             />
+            {form.data_nascimento && (
+              <p className={`text-xs ${isMaiorDeIdade(form.data_nascimento) ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                {isMaiorDeIdade(form.data_nascimento)
+                  ? 'Este dependente já completou 18 anos — será cadastrado como Inativo.'
+                  : `Será inativado automaticamente ao completar 18 anos, em ${calcularDataMaioridade(form.data_nascimento)?.toLocaleDateString('pt-BR')}.`}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
