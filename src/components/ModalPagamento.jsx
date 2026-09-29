@@ -1,193 +1,251 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from "react";
 
 const MESES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-]
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
 
 function gerarMeses() {
-  const hoje = new Date()
-  const opcoes = []
+  const hoje = new Date();
+  const opcoes = [];
   for (let i = 0; i < 13; i++) {
-    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1)
-    opcoes.push(`${MESES[d.getMonth()]}/${d.getFullYear()}`)
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+    opcoes.push(`${MESES[d.getMonth()]}/${d.getFullYear()}`);
   }
-  return opcoes
+  return opcoes;
 }
 
 function hojeISO() {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
-function isoParaBR(iso) {
-  if (!iso) return '—'
-  const [y, m, d] = iso.split('-')
-  return `${d}/${m}/${y}`
+// Filtra os alvos com base no tipo de exibição ativo (Mensalidades vs Instrutor)
+function buscarAlvos(
+  socioId,
+  mesNum,
+  anoNum,
+  mensalidades,
+  pagamentos,
+  dependentesDoSocio,
+  tipoExibicao = "Mensalidades",
+) {
+  const alvos =
+    tipoExibicao === "Mensalidades"
+      ? [{ dependenteId: null, nome: null }]
+      : dependentesDoSocio.map((d) => ({
+          dependenteId: d.id,
+          nome: d.nome_completo || d.nome,
+        }));
+
+  return alvos.map((alvo) => {
+    const m = mensalidades.find(
+      (mens) =>
+        mens.socio_id === Number(socioId) &&
+        mens.mes === mesNum &&
+        mens.ano === anoNum &&
+        (alvo.dependenteId
+          ? mens.dependente_id === alvo.dependenteId
+          : !mens.dependente_id),
+    );
+
+    if (!m) return { alvo, existe: false };
+
+    const p = pagamentos.find((pg) => pg.mensalidade_id === m.id);
+
+    return {
+      alvo,
+      existe: true,
+      mensalidade: m,
+      pagamento: p,
+      pago: m.status === "Pago",
+    };
+  });
 }
 
-const MESES_OPCOES = gerarMeses()
-const inputClass = 'w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-200'
+function statusPresumido(dataEntrada, mesNum, anoNum) {
+  const hoje = new Date();
+  const atualAno = hoje.getFullYear();
+  const atualMes = hoje.getMonth() + 1;
+
+  const isPast =
+    anoNum < atualAno || (anoNum === atualAno && mesNum < atualMes);
+
+  let admissaoAno = 0;
+  let admissaoMes = 0;
+
+  if (dataEntrada) {
+    const partes = dataEntrada.split("-");
+    admissaoAno = parseInt(partes[0], 10);
+    admissaoMes = parseInt(partes[1], 10);
+  }
+
+  const jaEstavaCadastrado =
+    admissaoAno > 0 &&
+    (anoNum > admissaoAno || (anoNum === admissaoAno && mesNum >= admissaoMes));
+
+  if (isPast && jaEstavaCadastrado) return "Atrasado";
+
+  return "Pendente";
+}
+
+function statusCombinado(detalhes, dataEntrada, mesNum, anoNum) {
+  const existentes = detalhes.filter((d) => d.existe);
+
+  if (existentes.length === 0)
+    return statusPresumido(dataEntrada, mesNum, anoNum);
+
+  if (existentes.every((d) => d.pago)) return "Pago";
+
+  if (existentes.some((d) => d.mensalidade.status === "Atrasado"))
+    return "Atrasado";
+
+  return "Pendente";
+}
+
+const MESES_OPCOES = gerarMeses();
 
 export default function ModalPagamento({
   nomeSocio,
   socioId,
   dataEntrada,
   mesPadrao,
+  tipoExibicao = "Mensalidades",
   mensalidades = [],
   pagamentos = [],
+  dependentesDoSocio = [],
   onFechar,
-  onSalvar
+  onSalvar,
 }) {
-  const [mes, setMes] = useState(() => mesPadrao ?? MESES_OPCOES[0])
-  const [valor, setValor] = useState('')
-  const [data, setData] = useState('')
-  const [formaPagamento, setFormaPagamento] = useState('Transferencia')
-  const [confirmado, setConfirmado] = useState(false)
-  const [salvando, setSalvando] = useState(false)
-  const [erro, setErro] = useState('')
-  const [isAlreadyPaid, setIsAlreadyPaid] = useState(false)
-  const [statusExibido, setStatusExibido] = useState('Pendente')
+  const [mes, setMes] = useState(() => mesPadrao ?? MESES_OPCOES[0]);
+  const [valor, setValor] = useState("");
+  const [data, setData] = useState("");
+  const [formaPagamento, setFormaPagamento] = useState("Transferencia");
+  const [confirmado, setConfirmado] = useState(false);
+  const [erro, setErro] = useState("");
+  const [isAlreadyPaid, setIsAlreadyPaid] = useState(false);
+  const [statusExibido, setStatusExibido] = useState("Pendente");
 
   useEffect(() => {
-    if (!mes || !socioId) return
+    if (!mes || !socioId) return;
 
-    const [mesNome, anoStr] = mes.split('/')
-    const mesNum = MESES.indexOf(mesNome) + 1
-    const anoNum = parseInt(anoStr, 10)
+    const [mesNome, anoStr] = mes.split("/");
+    const mesNum = MESES.indexOf(mesNome) + 1;
+    const anoNum = parseInt(anoStr, 10);
 
-    const m = mensalidades.find(
-      mens => mens.socio_id === Number(socioId) &&
-              mens.mes === mesNum &&
-              mens.ano === anoNum &&
-              !mens.dependente_id
-    )
+    const detalhes = buscarAlvos(
+      socioId,
+      mesNum,
+      anoNum,
+      mensalidades,
+      pagamentos,
+      dependentesDoSocio,
+      tipoExibicao,
+    );
 
-    let statusCalculado = 'Pendente'
+    const existentes = detalhes.filter((d) => d.existe);
 
-    if (m && m.status === 'Pago') {
-      const p = pagamentos.find(pg => pg.mensalidade_id === m.id)
-      if (p) {
-        setValor(`R$ ${Number(p.valor_pago).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`)
-        setData(p.data_pagamento)
-        setFormaPagamento(p.forma_pagamento)
-      } else {
-        setValor(`R$ ${Number(m.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`)
-        setData(hojeISO())
-        setFormaPagamento('Transferencia')
-      }
-      setIsAlreadyPaid(true)
-      statusCalculado = 'Pago'
+    const statusCalculado = statusCombinado(
+      detalhes,
+      dataEntrada,
+      mesNum,
+      anoNum,
+    );
+
+    if (statusCalculado === "Pago") {
+      const total = existentes.reduce(
+        (acc, d) =>
+          acc +
+          Number(d.pagamento ? d.pagamento.valor_pago : d.mensalidade.valor),
+        0,
+      );
+
+      const dataMaisRecente = existentes
+        .filter((d) => d.pago && d.pagamento)
+        .map((d) => d.pagamento.data_pagamento)
+        .sort()
+        .at(-1);
+
+      const formaRepresentativa =
+        existentes.find((d) => d.pagamento)?.pagamento?.forma_pagamento ||
+        "Transferencia";
+
+      setValor(
+        `R$ ${total.toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+        })}`,
+      );
+
+      setData(dataMaisRecente || hojeISO());
+      setFormaPagamento(formaRepresentativa);
+      setIsAlreadyPaid(true);
     } else {
-      if (m) {
-        setValor(`R$ ${Number(m.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`)
-        statusCalculado = m.status
-      } else {
-        setValor('')
+      const totalPendentes = existentes.reduce(
+        (acc, d) => acc + Number(d.mensalidade.valor),
+        0,
+      );
 
-        // Calcular status presumido se não existir registro de mensalidade
-        const hoje = new Date()
-        const atualAno = hoje.getFullYear()
-        const atualMes = hoje.getMonth() + 1
+      setValor(
+        totalPendentes > 0
+          ? `R$ ${totalPendentes.toLocaleString("pt-BR", {
+              minimumFractionDigits: 2,
+            })}`
+          : "",
+      );
 
-        const isPast = anoNum < atualAno || (anoNum === atualAno && mesNum < atualMes)
-        
-        let admissaoAno = 0
-        let admissaoMes = 0
-        if (dataEntrada) {
-          const partes = dataEntrada.split('-')
-          admissaoAno = parseInt(partes[0], 10)
-          admissaoMes = parseInt(partes[1], 10)
-        }
-
-        const jaEstavaCadastrado = admissaoAno > 0 && (anoNum > admissaoAno || (anoNum === admissaoAno && mesNum >= admissaoMes))
-
-        if (isPast && jaEstavaCadastrado) {
-          statusCalculado = 'Atrasado'
-        } else {
-          statusCalculado = 'Pendente'
-        }
-      }
-      setData('')
-      setFormaPagamento('Transferencia')
-      setIsAlreadyPaid(false)
-    }
-    
-    setStatusExibido(statusCalculado)
-    setErro('')
-  }, [mes, socioId, dataEntrada, mensalidades, pagamentos])
-
-  function obterStatusOpcao(opcaoMesStr) {
-    if (!socioId || !opcaoMesStr) return 'Pendente'
-
-    const [mesNome, anoStr] = opcaoMesStr.split('/')
-    const mesNum = MESES.indexOf(mesNome) + 1
-    const anoNum = parseInt(anoStr, 10)
-
-    const m = mensalidades.find(
-      mens => mens.socio_id === Number(socioId) &&
-              mens.mes === mesNum &&
-              mens.ano === anoNum &&
-              !mens.dependente_id
-    )
-
-    if (m) {
-      return m.status
+      setData("");
+      setFormaPagamento("Transferencia");
+      setIsAlreadyPaid(false);
     }
 
-    // Calcular status presumido se não existir registro de mensalidade
-    const hoje = new Date()
-    const atualAno = hoje.getFullYear()
-    const atualMes = hoje.getMonth() + 1
-
-    const isPast = anoNum < atualAno || (anoNum === atualAno && mesNum < atualMes)
-    
-    let admissaoAno = 0
-    let admissaoMes = 0
-    if (dataEntrada) {
-      const partes = dataEntrada.split('-')
-      admissaoAno = parseInt(partes[0], 10)
-      admissaoMes = parseInt(partes[1], 10)
-    }
-
-    const jaEstavaCadastrado = admissaoAno > 0 && (anoNum > admissaoAno || (anoNum === admissaoAno && mesNum >= admissaoMes))
-
-    if (isPast && jaEstavaCadastrado) {
-      return 'Atrasado'
-    }
-    
-    return 'Pendente'
-  }
+    setStatusExibido(statusCalculado);
+    setErro("");
+  }, [mes, socioId, dataEntrada, mensalidades, pagamentos, dependentesDoSocio, tipoExibicao]);
 
   function confirmar() {
-    if (isAlreadyPaid) return
+    if (isAlreadyPaid) return;
 
     if (!mes || !valor.trim() || !data) {
-      setErro('Preencha todos os campos antes de confirmar.')
-      return
+      setErro("Preencha todos os campos antes de confirmar.");
+      return;
     }
-    setErro('')
+
+    setErro("");
+
     onSalvar({
       mesStr: mes,
       valorStr: valor.trim(),
-      status: 'Pago',
+      status: "Pago",
       dataIso: data,
-      formaPagamento
-    })
-    setConfirmado(true)
+      formaPagamento,
+    });
+
+    setConfirmado(true);
   }
 
   if (confirmado) {
     return (
-      <div className="fixed inset-0 bg-black/50 z-[999] flex items-center justify-center p-5">
+      <div className="fixed inset-0 bg-black/50 z-[999] flex items-center justify-center p-4 overflow-y-auto">
         <div className="bg-white w-full max-w-[440px] rounded-2xl p-8 text-center shadow-[0_8px_32px_rgba(0,0,0,0.18)]">
           <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-3xl mx-auto mb-5 text-green-600 font-bold">
             ✓
           </div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Pagamento registrado!</h2>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            Pagamento ({tipoExibicao}) registrado!
+          </h2>
           <p className="text-gray-500 text-sm mb-1">
             Referência: <strong>{mes}</strong>
           </p>
@@ -196,194 +254,137 @@ export default function ModalPagamento({
           </p>
           <button
             onClick={onFechar}
-            className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors cursor-pointer shadow-[0_4px_12px_rgba(37,99,235,0.3)] border-none"
+            className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors cursor-pointer border-none shadow-[0_4px_12px_rgba(37,99,235,0.3)]"
           >
             Fechar
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[999] flex items-center justify-center p-5">
+    <div className="fixed inset-0 bg-black/50 z-[999] flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white w-full max-w-[500px] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.18)] overflow-hidden">
-
         {/* Cabeçalho */}
         <div className="bg-[#1a3560] px-6 py-5 flex justify-between items-start">
           <div>
-            <h2 className="text-white text-lg font-bold">Registrar Pagamento</h2>
+            <h2 className="text-white text-lg font-bold">
+              Registrar Pagamento ({tipoExibicao})
+            </h2>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-blue-200 text-sm leading-none">{nomeSocio}</span>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full select-none leading-none ${
-                statusExibido === 'Pago'
-                  ? 'text-green-700 bg-green-100'
-                  : statusExibido === 'Atrasado'
-                  ? 'text-red-700 bg-red-100'
-                  : 'text-amber-700 bg-amber-100'
-              }`}>
-                {statusExibido === 'Pago' ? 'Pago' : statusExibido === 'Atrasado' ? 'Atrasado' : 'Pendente'}
+              <span className="text-blue-200 text-sm leading-none">
+                {nomeSocio}
+              </span>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full select-none leading-none ${
+                  statusExibido === "Pago"
+                    ? "text-green-700 bg-green-100"
+                    : statusExibido === "Atrasado"
+                      ? "text-red-700 bg-red-100"
+                      : "text-amber-700 bg-amber-100"
+                }`}
+              >
+                {statusExibido}
               </span>
             </div>
           </div>
           <button
             onClick={onFechar}
-            className="text-blue-200 hover:text-white text-3xl leading-none cursor-pointer bg-transparent border-none"
+            className="text-white/60 hover:text-white text-xl font-bold bg-transparent border-none cursor-pointer"
           >
-            &times;
+            ✕
           </button>
         </div>
 
-        <div className="p-6">
-
-          {/* Formulário */}
-          <div className="flex flex-col gap-4 mb-5">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold">Mês de referência</label>
-              <select value={mes} onChange={e => setMes(e.target.value)} className={inputClass}>
-                {MESES_OPCOES.map(m => {
-                  const statusOpcao = obterStatusOpcao(m)
-                  let style = {}
-                  if (statusOpcao === 'Pago') {
-                    style = { color: '#15803d', fontWeight: 'bold' }
-                  } else if (statusOpcao === 'Atrasado') {
-                    style = { color: '#b91c1c', fontWeight: 'bold' }
-                  }
-                  return (
-                    <option key={m} value={m} style={style}>
-                      {m} {statusOpcao === 'Pago' ? ' (Pago)' : statusOpcao === 'Atrasado' ? ' (Atrasado)' : ''}
-                    </option>
-                  )
-                })}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold">Valor</label>
-                <input
-                  type="text"
-                  value={valor}
-                  onChange={e => setValor(e.target.value)}
-                  className={`${inputClass} ${isAlreadyPaid ? 'opacity-60 cursor-not-allowed bg-gray-200' : ''}`}
-                  disabled={isAlreadyPaid}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold">Data do pagamento</label>
-                <input
-                  type="date"
-                  value={data}
-                  onChange={e => setData(e.target.value)}
-                  className={`${inputClass} ${isAlreadyPaid ? 'opacity-60 cursor-not-allowed bg-gray-200' : ''}`}
-                  disabled={isAlreadyPaid}
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold">Forma de Pagamento</label>
-              <select
-                value={formaPagamento}
-                onChange={e => setFormaPagamento(e.target.value)}
-                className={`${inputClass} ${isAlreadyPaid ? 'opacity-60 cursor-not-allowed bg-gray-200' : ''}`}
-                disabled={isAlreadyPaid}
-              >
-                <option value="Transferencia">Pix / Transferência</option>
-                <option value="Cartao">Cartão</option>
-                <option value="Dinheiro">Dinheiro</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Aviso se já pago */}
-          {isAlreadyPaid && (
-            <div className="bg-green-50 border border-green-200 text-green-800 rounded-xl p-4 mb-5 text-sm flex flex-col gap-1 shadow-sm">
-              <span className="font-bold flex items-center gap-1.5 text-green-700">
-                ✓ Mensalidade já quitada!
-              </span>
-              <span>
-                Este pagamento foi registrado em <strong>{isoParaBR(data)}</strong> via{' '}
-                <strong>
-                  {formaPagamento === 'Transferencia'
-                    ? 'Pix / Transferência'
-                    : formaPagamento === 'Cartao'
-                    ? 'Cartão'
-                    : 'Dinheiro'}
-                </strong>.
-              </span>
-            </div>
-          )}
-
-          {/* Preview em tempo real */}
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-5">
-            <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide mb-3">Resumo do lançamento</p>
-            <div className="flex flex-col gap-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Sócio</span>
-                <span className="font-semibold text-gray-800 truncate max-w-[60%] text-right">{nomeSocio}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Referência</span>
-                <span className="font-semibold text-gray-800">{mes || '—'}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Valor</span>
-                <span className="font-semibold text-gray-800">{valor || '—'}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Data</span>
-                <span className="font-semibold text-gray-800">{isoParaBR(data)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Forma</span>
-                <span className="font-semibold text-gray-800">
-                  {formaPagamento === 'Transferencia' ? 'Pix / Transferência' : formaPagamento === 'Cartao' ? 'Cartão' : 'Dinheiro'}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Status</span>
-                <span className={`font-bold px-2.5 py-0.5 rounded-full text-xs leading-none select-none ${
-                  statusExibido === 'Pago'
-                    ? 'text-green-700 bg-green-100'
-                    : statusExibido === 'Atrasado'
-                    ? 'text-red-700 bg-red-100'
-                    : 'text-amber-700 bg-amber-100'
-                }`}>
-                  {statusExibido === 'Pago' ? 'Pago' : statusExibido === 'Atrasado' ? 'Atrasado' : 'Pendente'}
-                </span>
-              </div>
-            </div>
-          </div>
-
+        {/* Formulário */}
+        <div className="p-6 space-y-4">
           {erro && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4">
+            <div className="bg-red-50 text-red-600 text-xs p-3 rounded-xl">
               {erro}
-            </p>
+            </div>
           )}
 
-          {/* Ações */}
-          <div className="flex justify-end gap-3">
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Mês de referência
+            </label>
+            <select
+              value={mes}
+              onChange={(e) => setMes(e.target.value)}
+              className="w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+            >
+              {MESES_OPCOES.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Valor (R$)
+            </label>
+            <input
+              type="text"
+              value={valor}
+              onChange={(e) => setValor(e.target.value)}
+              disabled={isAlreadyPaid}
+              placeholder="Ex: R$ 150,00"
+              className="w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-60"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Data do Pagamento
+            </label>
+            <input
+              type="date"
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+              disabled={isAlreadyPaid}
+              className="w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-60"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Forma de Pagamento
+            </label>
+            <select
+              value={formaPagamento}
+              onChange={(e) => setFormaPagamento(e.target.value)}
+              disabled={isAlreadyPaid}
+              className="w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-60"
+            >
+              <option value="Transferencia">PIX / Transferência</option>
+              <option value="Dinheiro">Dinheiro</option>
+              <option value="Cartao">Cartão</option>
+              <option value="Boleto">Boleto</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
             <button
               onClick={onFechar}
-              className="bg-white border border-slate-300 text-gray-700 px-5 py-3 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer"
+              className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors cursor-pointer bg-white"
             >
               Cancelar
             </button>
-            <button
-              onClick={confirmar}
-              disabled={isAlreadyPaid}
-              className={`px-6 py-3 rounded-xl font-bold text-sm transition-colors cursor-pointer border-none ${
-                isAlreadyPaid
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
-                  : 'bg-[#1a3560] text-white hover:bg-blue-800 shadow-[0_4px_12px_rgba(26,53,96,0.35)]'
-              }`}
-            >
-              {salvando ? 'Salvando...' : 'Confirmar Pagamento'}
-            </button>
+
+            {!isAlreadyPaid && (
+              <button
+                onClick={confirmar}
+                className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-colors cursor-pointer shadow-md border-none"
+              >
+                Confirmar Pagamento
+              </button>
+            )}
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
