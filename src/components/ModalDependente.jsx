@@ -1,17 +1,29 @@
 import { useState } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP, calcularDataMaioridade, isMaiorDeIdade } from '../utils/formattingUtils'
+import { Upload } from 'lucide-react'
+import { lerImagemRedimensionada } from '../utils/imagemHelper'
 
 const campoVazio = { nome: '', cpf: '' }
 
 const inputClass = 'w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition-colors'
 
 export default function ModalDependente({ onFechar, onSalvar, socioMatricula = '', socioEndereco = '', initial = null }) {
-  const [form, setForm] = useState(initial || { ...campoVazio, telefone: '', data_nascimento: '', dancarino: false })
+  const [form, setForm] = useState(initial || { ...campoVazio, telefone: '', data_nascimento: '', dancarino: false, foto: '' })
   const toast = useToast()
 
   function setField(key, value) {
     setForm(prev => ({ ...prev, [key]: value }))
+  }
+
+  async function handleFoto(e) {
+    const arquivo = e.target.files?.[0]
+    if (!arquivo) return
+    try {
+      setField('foto', await lerImagemRedimensionada(arquivo))
+    } catch (err) {
+      toast.error(err.message)
+    }
   }
 
   function salvar() {
@@ -32,6 +44,22 @@ export default function ModalDependente({ onFechar, onSalvar, socioMatricula = '
 
         <div className="flex flex-col gap-4">
           {/* Matrícula do sócio é atribuída automaticamente; não exibir no modal */}
+          <div className="flex items-center gap-4">
+            <div className="w-[80px] h-[80px] rounded-full bg-blue-50 border-2 border-dashed border-blue-300 flex items-center justify-center text-blue-400 overflow-hidden shrink-0">
+              {form.foto
+                ? <img src={form.foto} alt="Foto do dependente" className="w-full h-full object-cover" />
+                : <Upload size={24} />}
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-bold">Foto do Dependente</label>
+              <input type="file" accept="image/*" onChange={handleFoto} className="text-sm" />
+              {form.foto && (
+                <button type="button" onClick={() => setField('foto', '')} className="text-xs text-red-600 text-left cursor-pointer">
+                  Remover foto
+                </button>
+              )}
+            </div>
+          </div>
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold">Nome Completo *</label>

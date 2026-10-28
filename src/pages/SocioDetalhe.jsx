@@ -564,7 +564,11 @@ export default function SocioDetalhe() {
             <div className="grid grid-cols-1 gap-3">
               {dependentesSocio.map(d => (
                 <div key={d.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex justify-between items-start gap-4">
-                  <div>
+                  <div className="flex gap-3">
+                    {d.foto
+                      ? <img src={d.foto} alt={d.nome} className="w-12 h-12 rounded-full object-cover shrink-0" />
+                      : <div className="w-12 h-12 rounded-full bg-blue-100 shrink-0" />}
+                    <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-bold text-[#1a3560]">{d.nome}</h4>
                       <Badge color={d.status === 'Inativo' ? 'gray' : 'green'}>{d.status || 'Ativo'}</Badge>
@@ -577,6 +581,7 @@ export default function SocioDetalhe() {
                           : `Inativa automaticamente em ${formatDateBR(d.data_maioridade)}`}
                       </p>
                     )}
+                    </div>
                   </div>
                   {podeEditarSocio && (
                     <div className="flex items-center gap-2">

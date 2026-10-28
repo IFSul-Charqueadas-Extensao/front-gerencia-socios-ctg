@@ -97,6 +97,7 @@ export default function NovoSocio() {
                 telefone: dep.telefone || '',
                 data_nascimento: dep.data_nascimento || null,
                 dancarino: dep.dancarino ?? false,
+                foto: dep.foto || null,
                 endereco: created.endereco || ''
               }
               return dependenteService.create(payload)
