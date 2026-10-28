@@ -3,13 +3,14 @@ import { useToast } from '../contexts/ToastContext'
 import { validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP, calcularDataMaioridade, isMaiorDeIdade } from '../utils/formattingUtils'
 import { Upload } from 'lucide-react'
 import { lerImagemRedimensionada } from '../utils/imagemHelper'
+import { PARENTESCO_LABEL } from '../utils/dependenteMapper'
 
 const campoVazio = { nome: '', cpf: '' }
 
 const inputClass = 'w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition-colors'
 
 export default function ModalDependente({ onFechar, onSalvar, socioMatricula = '', socioEndereco = '', initial = null }) {
-  const [form, setForm] = useState(initial || { ...campoVazio, telefone: '', data_nascimento: '', dancarino: false, foto: '' })
+  const [form, setForm] = useState(initial || { ...campoVazio, telefone: '', data_nascimento: '', dancarino: false, foto: '', parentesco: 'filho' })
   const toast = useToast()
 
   function setField(key, value) {
@@ -73,6 +74,14 @@ export default function ModalDependente({ onFechar, onSalvar, socioMatricula = '
           </div>
 
           <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold">Parentesco *</label>
+            <select value={form.parentesco || 'filho'} onChange={e => setField('parentesco', e.target.value)} className={inputClass}>
+              {Object.entries(PARENTESCO_LABEL).map(([valor, rotulo]) => (
+                <option key={valor} value={valor}>{rotulo}</option>
+              ))}
+            </select>
+          </div>
             <label className="text-sm font-bold">CPF *</label>
             <input
               type="text"
@@ -101,7 +110,10 @@ export default function ModalDependente({ onFechar, onSalvar, socioMatricula = '
               onChange={e => setField('data_nascimento', e.target.value)}
               className={inputClass}
             />
-            {form.data_nascimento && (
+                        {form.data_nascimento && form.parentesco === 'conjuge' && (
+              <p className="text-xs text-gray-500">Cônjuge permanece dependente independentemente da idade.</p>
+            )}
+            {form.data_nascimento && form.parentesco !== 'conjuge' && (
               <p className={`text-xs ${isMaiorDeIdade(form.data_nascimento) ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
                 {isMaiorDeIdade(form.data_nascimento)
                   ? 'Este dependente já completou 18 anos — será cadastrado como Inativo.'

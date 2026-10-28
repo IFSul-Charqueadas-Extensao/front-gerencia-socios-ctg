@@ -9,6 +9,7 @@ import { validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP } fr
 import { socioService } from '../services/socioService'
 import { dependenteService } from '../services/dependenteService'
 import { cartaoTradService } from '../services/cartaoTradService'
+import { PARENTESCO_LABEL } from '../utils/dependenteMapper'
 
 
 export default function NovoSocio() {
@@ -97,6 +98,7 @@ export default function NovoSocio() {
                 telefone: dep.telefone || '',
                 data_nascimento: dep.data_nascimento || null,
                 dancarino: dep.dancarino ?? false,
+                parentesco: dep.parentesco || 'filho',
                 foto: dep.foto || null,
                 endereco: created.endereco || ''
               }
@@ -352,7 +354,8 @@ export default function NovoSocio() {
               <div key={i} className="bg-gray-50 rounded-xl p-4 mt-3.5 border border-gray-200">
                     <h4 className="font-bold text-[#1a3560] mb-2">Dependente {i + 1}</h4>
                     <p className="text-sm mb-1"><strong>Nome:</strong> {dep.nome}</p>
-                    <p className="text-sm"><strong>CPF:</strong> {dep.cpf}</p>
+                    <p className="text-sm mb-1"><strong>CPF:</strong> {dep.cpf}</p>
+                    <p className="text-sm"><strong>Parentesco:</strong> {PARENTESCO_LABEL[dep.parentesco] || PARENTESCO_LABEL.filho}</p>
               </div>
             ))}
           </section>

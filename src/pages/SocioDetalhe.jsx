@@ -16,6 +16,7 @@ import { MESES_NOMES, iniciais, validarCPF, formatarCPF, formatarTelefone, forma
 
 import { cartaoTradService } from "../services/cartaoTradService";
 import { IdCard, FileText } from 'lucide-react'
+import { PARENTESCO_LABEL } from '../utils/dependenteMapper'
 
 export default function SocioDetalhe() {
   const { id } = useParams()
@@ -593,9 +594,10 @@ export default function SocioDetalhe() {
                       ? <img src={d.foto} alt={d.nome} className="w-12 h-12 rounded-full object-cover shrink-0" />
                       : <div className="w-12 h-12 rounded-full bg-blue-100 shrink-0" />}
                     <div>
-                    <div className="flex items-center gap-2 flex-wrap">
+                         <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-bold text-[#1a3560]">{d.nome}</h4>
                       <Badge color={d.status === 'Inativo' ? 'gray' : 'green'}>{d.status || 'Ativo'}</Badge>
+                      <Badge color="purple">{PARENTESCO_LABEL[d.parentesco] || PARENTESCO_LABEL.filho}</Badge>
                     </div>
                     <p className="text-sm text-gray-600">Nascimento: {d.data_nascimento || d.nascimento || '—'}</p>
                     {d.data_maioridade && (
