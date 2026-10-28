@@ -15,7 +15,7 @@ import { calcularStatusSocio } from '../utils/statusHelper'
 import { MESES_NOMES, iniciais, validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP, formatDateBR } from '../utils/formattingUtils'
 
 import { cartaoTradService } from "../services/cartaoTradService";
-import { IdCard } from 'lucide-react'
+import { IdCard, FileText } from 'lucide-react'
 
 export default function SocioDetalhe() {
   const { id } = useParams()
@@ -39,7 +39,8 @@ export default function SocioDetalhe() {
   const [pagamentos, setPagamentos] = useState([])
   const [cartaoTrad, setCartaoTrad] = useState(null);
   const [gerandoCartao, setGerandoCartao] = useState(false);
-
+  const [gerandoContrato, setGerandoContrato] = useState(false)
+  
   const carregarDados = useCallback(() => {
     setLoading(true)
     Promise.all([
@@ -309,6 +310,20 @@ export default function SocioDetalhe() {
     }
   }
 
+  async function handleGerarContrato() {
+    setGerandoContrato(true)
+    try {
+      // import dinâmico: o jspdf só é carregado quando alguém gera o contrato
+      const { gerarContratoPdf } = await import('../utils/contratoPdf')
+      await gerarContratoPdf(form, dependentesSocio.filter(d => d.status !== 'Inativo'))
+    } catch (err) {
+      console.error(err)
+      toast.error('Erro ao gerar o contrato.')
+    } finally {
+      setGerandoContrato(false)
+    }
+  }
+
   async function handleGerarCartao() {
     setGerandoCartao(true)
     try {
@@ -382,6 +397,15 @@ export default function SocioDetalhe() {
                     : cartaoTrad
                     ? 'Reimprimir Cartão Tradicionalista'
                     : 'Gerar Cartão Tradicionalista (PDF)'}
+                </button>
+              
+                <button
+                  onClick={handleGerarContrato}
+                  disabled={gerandoContrato}
+                  className="bg-[#1a3560] text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-blue-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <FileText size={18} />
+                  {gerandoContrato ? 'Gerando...' : 'Gerar Contrato (PDF)'}
                 </button>
 
             </div>
