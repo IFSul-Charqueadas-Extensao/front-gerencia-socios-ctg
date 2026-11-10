@@ -13,6 +13,7 @@ const Relatorios = lazy(() => import("./pages/Relatorios"));
 const SocioDetalhe = lazy(() => import("./pages/SocioDetalhe"));
 const Pagamentos = lazy(() => import("./pages/Pagamentos"));
 const Login = lazy(() => import("./pages/Login"));
+const Verificar = lazy(() => import("./pages/Verificar"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Copa = lazy(() => import("./pages/Copa"));
 const GestaoRecursos = lazy(() => import("./pages/GestaoRecursos"));
@@ -78,8 +79,9 @@ export default function App() {
           <RedirecionaSessaoExpirada />
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              {/* Única rota pública */}
+              {/* Rotas públicas */}
               <Route path="/login" element={<Login />} />
+              <Route path="/verificar" element={<Verificar />} />
 
               <Route
                 path="/"
