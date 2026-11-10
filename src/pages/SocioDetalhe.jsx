@@ -15,7 +15,8 @@ import { calcularStatusSocio } from '../utils/statusHelper'
 import { MESES_NOMES, iniciais, validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP, formatDateBR } from '../utils/formattingUtils'
 
 import { cartaoTradService } from "../services/cartaoTradService";
-import { IdCard } from 'lucide-react'
+import { IdCard, FileText } from 'lucide-react'
+import { PARENTESCO_LABEL } from '../utils/dependenteMapper'
 
 export default function SocioDetalhe() {
   const { id } = useParams()
@@ -39,7 +40,8 @@ export default function SocioDetalhe() {
   const [pagamentos, setPagamentos] = useState([])
   const [cartaoTrad, setCartaoTrad] = useState(null);
   const [gerandoCartao, setGerandoCartao] = useState(false);
-
+  const [gerandoContrato, setGerandoContrato] = useState(false)
+  
   const carregarDados = useCallback(() => {
     setLoading(true)
     Promise.all([
@@ -309,6 +311,20 @@ export default function SocioDetalhe() {
     }
   }
 
+  async function handleGerarContrato() {
+    setGerandoContrato(true)
+    try {
+      // import dinâmico: o jspdf só é carregado quando alguém gera o contrato
+      const { gerarContratoPdf } = await import('../utils/contratoPdf')
+      await gerarContratoPdf(form, dependentesSocio.filter(d => d.status !== 'Inativo'))
+    } catch (err) {
+      console.error(err)
+      toast.error('Erro ao gerar o contrato.')
+    } finally {
+      setGerandoContrato(false)
+    }
+  }
+
   async function handleGerarCartao() {
     setGerandoCartao(true)
     try {
@@ -382,6 +398,15 @@ export default function SocioDetalhe() {
                     : cartaoTrad
                     ? 'Reimprimir Cartão Tradicionalista'
                     : 'Gerar Cartão Tradicionalista (PDF)'}
+                </button>
+              
+                <button
+                  onClick={handleGerarContrato}
+                  disabled={gerandoContrato}
+                  className="bg-[#1a3560] text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-blue-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <FileText size={18} />
+                  {gerandoContrato ? 'Gerando...' : 'Gerar Contrato (PDF)'}
                 </button>
 
             </div>
@@ -564,10 +589,15 @@ export default function SocioDetalhe() {
             <div className="grid grid-cols-1 gap-3">
               {dependentesSocio.map(d => (
                 <div key={d.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex justify-between items-start gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex gap-3">
+                    {d.foto
+                      ? <img src={d.foto} alt={d.nome} className="w-12 h-12 rounded-full object-cover shrink-0" />
+                      : <div className="w-12 h-12 rounded-full bg-blue-100 shrink-0" />}
+                    <div>
+                         <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-bold text-[#1a3560]">{d.nome}</h4>
                       <Badge color={d.status === 'Inativo' ? 'gray' : 'green'}>{d.status || 'Ativo'}</Badge>
+                      <Badge color="purple">{PARENTESCO_LABEL[d.parentesco] || PARENTESCO_LABEL.filho}</Badge>
                     </div>
                     <p className="text-sm text-gray-600">Nascimento: {d.data_nascimento || d.nascimento || '—'}</p>
                     {d.data_maioridade && (
@@ -577,6 +607,7 @@ export default function SocioDetalhe() {
                           : `Inativa automaticamente em ${formatDateBR(d.data_maioridade)}`}
                       </p>
                     )}
+                    </div>
                   </div>
                   {podeEditarSocio && (
                     <div className="flex items-center gap-2">

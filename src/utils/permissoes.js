@@ -25,7 +25,7 @@ export const ROTULO_PAPEL = {
 /** Descrição do que cada perfil pode fazer — usada na tela de usuários */
 export const DESCRICAO_PAPEL = {
   admin: 'Acesso total, incluindo a gestão de usuários',
-  financeiro: 'Vê tudo e altera mensalidades e pagamentos',
+  financeiro: 'Vê tudo e altera mensalidades, pagamentos, vendas da Copa e gestão de recursos',
   socios: 'Vê tudo e altera sócios, dependentes, categorias e cartões',
   consulta: 'Somente visualização, sem nenhuma alteração',
 }
@@ -40,9 +40,12 @@ const ESCRITA = {
     'mensalidades',
     'pagamentos',
     'usuarios',
+    'copa',
+    'gestao-recursos',
+    'gestao_recursos',
   ],
   socios: ['socios', 'dependentes', 'categorias', 'cartao-tradicionalista'],
-  financeiro: ['mensalidades', 'pagamentos'],
+  financeiro: ['mensalidades', 'pagamentos', 'copa', 'gestao-recursos', 'gestao_recursos'],
   consulta: [],
 }
 
