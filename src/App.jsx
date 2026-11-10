@@ -12,7 +12,7 @@ const NovoSocio   = lazy(() => import('./pages/NovoSocio'))
 const Relatorios  = lazy(() => import('./pages/Relatorios'))
 const SocioDetalhe = lazy(() => import('./pages/SocioDetalhe'))
 const Pagamentos  = lazy(() => import('./pages/Pagamentos'))
-const Login       = lazy(() => import('./pages/Login'))
+const Landing     = lazy(() => import('./pages/Landing'))
 const Usuarios    = lazy(() => import('./pages/Usuarios'))
 
 function PageLoader() {
@@ -56,8 +56,8 @@ export default function App() {
           <RedirecionaSessaoExpirada />
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              {/* Única rota pública */}
-              <Route path="/login" element={<Login />} />
+              {/* Única rota pública: landing de divulgação com o login embutido */}
+              <Route path="/login" element={<Landing />} />
 
               <Route path="/"            element={<RotaProtegida><Painel /></RotaProtegida>} />
               <Route path="/socios"      element={<RotaProtegida><Socios /></RotaProtegida>} />
