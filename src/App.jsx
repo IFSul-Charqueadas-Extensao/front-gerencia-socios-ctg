@@ -15,6 +15,7 @@ const Pagamentos = lazy(() => import("./pages/Pagamentos"));
 const Login = lazy(() => import("./pages/Login"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Copa = lazy(() => import("./pages/Copa"));
+const GestaoRecursos = lazy(() => import("./pages/GestaoRecursos"));
 
 function PageLoader() {
   return (
@@ -133,6 +134,14 @@ export default function App() {
                 element={
                   <RotaProtegida>
                     <Copa />
+                  </RotaProtegida>
+                }
+              />
+              <Route
+                path="/gestao-recursos"
+                element={
+                  <RotaProtegida>
+                    <GestaoRecursos />
                   </RotaProtegida>
                 }
               />
