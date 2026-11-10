@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, FileText, CreditCard, Menu, X, ShieldCheck, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, FileText, CreditCard, Menu, X, ShieldCheck, LogOut, Store } from 'lucide-react'
 import logo from '../../modelos/css/Logo.jpg'
 import { useAuth } from '../contexts/AuthContext'
 import { ROTULO_PAPEL } from '../utils/permissoes'
+
 
 // `papeis` restringe o item a perfis específicos; sem ele, todos veem
 const links = [
   { to: '/',           label: 'Painel',     icon: LayoutDashboard, end: true },
   { to: '/socios',     label: 'Sócios',     icon: Users },
   { to: '/pagamentos', label: 'Pagamentos', icon: CreditCard },
+  { to: '/copa', label: 'Copa', icon: Store },
   { to: '/relatorios', label: 'Relatórios', icon: FileText },
   { to: '/usuarios',   label: 'Usuários',   icon: ShieldCheck, papeis: ['admin'] },
 ]
