@@ -379,7 +379,9 @@ export default function SocioDetalhe() {
         </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-[#1a3560] text-3xl font-bold mb-1 truncate">{form.nome}</h1>
-            <p className="text-gray-500 text-sm mb-3">CPF: {form.cpf} · Sócio desde {form.data_entrada}</p>
+            <p className="text-gray-500 text-sm mb-3">CPF: {form.cpf} · {form.status === 'Inativo' && form.data_desligamento
+                ? `Desligado em ${formatDateBR(form.data_desligamento)}`
+                : `Sócio desde ${formatDateBR(form.data_entrada)}`}</p>
             <div className="flex gap-2 flex-wrap">
               <Badge color={form.status === 'Ativo' ? 'green' : 'red'}>{form.status}</Badge>
               <Badge color={statusAutomatico === 'Em dia' ? 'green' : statusAutomatico === 'Atrasado' ? 'red' : statusAutomatico === 'Inativo' ? 'gray' : 'yellow'}>
@@ -495,13 +497,6 @@ export default function SocioDetalhe() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold">Categoria</label>
-                <select value={form.status} onChange={e => setField('status', e.target.value)} className={inputClass} disabled={saving || !podeEditarSocio}>
-                  <option>Ativo</option>
-                  <option>Inativo</option>
-                </select>
-              </div>
 
 
 
