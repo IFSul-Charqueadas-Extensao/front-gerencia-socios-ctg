@@ -15,6 +15,7 @@ const Pagamentos  = lazy(() => import('./pages/Pagamentos'))
 const Landing     = lazy(() => import('./pages/Landing'))
 const Usuarios    = lazy(() => import('./pages/Usuarios'))
 const Login = lazy(() => import("./pages/Login"));
+const Verificar = lazy(() => import("./pages/Verificar"));
 const Copa = lazy(() => import("./pages/Copa"));
 const GestaoRecursos = lazy(() => import("./pages/GestaoRecursos"));
 
@@ -79,6 +80,8 @@ export default function App() {
           <RedirecionaSessaoExpirada />
           <Suspense fallback={<PageLoader />}>
             <Routes>
+              {/* Rotas públicas */}
+              <Route path="/verificar" element={<Verificar />} />
               {/* Única rota pública: landing de divulgação com o login embutido */}
               <Route path="/login" element={<Landing />} />
 

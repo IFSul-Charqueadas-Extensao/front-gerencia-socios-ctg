@@ -4,7 +4,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 // Endpoints que não exigem token — precisam ficar de fora do tratamento
 // automático de 401, senão um login com senha errada derrubaria a sessão.
-const ROTAS_PUBLICAS = ["/auth/login", "/auth/refresh", "/auth/logout"];
+const ROTAS_PUBLICAS = ["/auth/login", "/auth/refresh", "/auth/logout", "/verificacao"];
 
 // Avisa a aplicação de que a sessão caiu. O AuthContext escuta este evento
 // e faz o redirecionamento — assim o api.js não precisa conhecer o router.
