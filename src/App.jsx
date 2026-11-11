@@ -6,14 +6,15 @@ import RotaProtegida from "./components/RotaProtegida";
 
 // Lazy loading: cada página vira um chunk separado carregado sob demanda.
 // jspdf (~1.4 MiB) só será carregado quando o usuário acessar /relatorios.
-const Painel = lazy(() => import("./pages/Painel"));
-const Socios = lazy(() => import("./pages/Socios"));
-const NovoSocio = lazy(() => import("./pages/NovoSocio"));
-const Relatorios = lazy(() => import("./pages/Relatorios"));
-const SocioDetalhe = lazy(() => import("./pages/SocioDetalhe"));
-const Pagamentos = lazy(() => import("./pages/Pagamentos"));
+const Painel      = lazy(() => import('./pages/Painel'))
+const Socios      = lazy(() => import('./pages/Socios'))
+const NovoSocio   = lazy(() => import('./pages/NovoSocio'))
+const Relatorios  = lazy(() => import('./pages/Relatorios'))
+const SocioDetalhe = lazy(() => import('./pages/SocioDetalhe'))
+const Pagamentos  = lazy(() => import('./pages/Pagamentos'))
+const Landing     = lazy(() => import('./pages/Landing'))
+const Usuarios    = lazy(() => import('./pages/Usuarios'))
 const Login = lazy(() => import("./pages/Login"));
-const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Copa = lazy(() => import("./pages/Copa"));
 const GestaoRecursos = lazy(() => import("./pages/GestaoRecursos"));
 
@@ -78,8 +79,8 @@ export default function App() {
           <RedirecionaSessaoExpirada />
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              {/* Única rota pública */}
-              <Route path="/login" element={<Login />} />
+              {/* Única rota pública: landing de divulgação com o login embutido */}
+              <Route path="/login" element={<Landing />} />
 
               <Route
                 path="/"
