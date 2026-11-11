@@ -3,10 +3,12 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { ChevronRight, Users } from 'lucide-react'
 import Layout from '../components/Layout'
 import Badge from '../components/Badge'
+import ModalDesligamento from '../components/ModalDesligamento'
 import EmptyState from '../components/EmptyState'
 import { INVERNADAS } from '../data/constants'
 import { useToast } from '../contexts/ToastContext'
-import { calcularStatusSocio } from '../utils/statusHelper'
+import { calcularStatusSocio, levantarPendenciasFinanceiras } from '../utils/statusHelper'
+import { gerarTermoDesligamentoPdf } from '../utils/termoDesligamento'
 import { useAuth } from '../contexts/AuthContext'
 import { socioService } from '../services/socioService'
 import { mensalidadeService } from '../services/mensalidadeService'
@@ -33,6 +35,9 @@ export default function Socios() {
   const [categoria, setCategoria] = useState('Todas as Categorias')
   const [status, setStatus] = useState(() => location.state?.filtroStatus ?? 'Todos os Status')
   const [invernada, setInvernada] = useState('Todas as Invernadas')
+  const [mensalidades, setMensalidades] = useState([])
+  const [socioParaDesligar, setSocioParaDesligar] = useState(null)
+  const [alterandoId, setAlterandoId] = useState(null)
 
   useEffect(() => {
     Promise.all([      
@@ -54,6 +59,7 @@ export default function Socios() {
             mensalidade: calcularStatusSocio(s, mensalidadesData)
           }
         })
+        setMensalidades(mensalidadesData)
         setDadosIniciais(mapped)
         setLoading(false)
       })
@@ -63,6 +69,46 @@ export default function Socios() {
         setLoading(false)
       })
   }, [toast])
+
+  function hojeIso() {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+
+  async function alterarSituacao(socio, novoStatus, dataDesligamento) {
+    setAlterandoId(socio.id)
+    try {
+      await socioService.update(socio.id, { ...socio, status: novoStatus, data_desligamento: dataDesligamento })
+      setDadosIniciais(prev => prev.map(s => {
+        if (s.id !== socio.id) return s
+        const atualizado = { ...s, status: novoStatus, data_desligamento: dataDesligamento }
+        return { ...atualizado, mensalidade: calcularStatusSocio(atualizado, mensalidades) }
+      }))
+      return true
+    } catch (err) {
+      console.error(err)
+      toast.error(`Erro ao alterar situação do sócio: ${err.message || err}`)
+      return false
+    } finally {
+      setAlterandoId(null)
+    }
+  }
+
+  async function confirmarDesligamento() {
+    const socio = socioParaDesligar
+    const data = hojeIso()
+    if (await alterarSituacao(socio, 'Inativo', data)) {
+      setSocioParaDesligar(null)
+      toast.success('Sócio desligado com sucesso!')
+      gerarTermoDesligamentoPdf(socio, data)
+    }
+  }
+
+  async function ativarSocio(socio) {
+    if (await alterarSituacao(socio, 'Ativo', null)) {
+      toast.success('Sócio ativado com sucesso!')
+    }
+  }
 
   const filtrados = useMemo(() => {
     return dadosIniciais.filter(s => {
@@ -215,7 +261,31 @@ export default function Socios() {
                         <td className="py-4 px-2.5 border-b border-gray-100 text-sm font-medium">{s.nome}</td>
                         <td className="py-4 px-2.5 border-b border-gray-100 text-sm text-gray-500">{s.cpf}</td>
                         <td className="py-4 px-2.5 border-b border-gray-100 text-sm text-gray-500">{s.endereco}</td>
-                        <td className="py-4 px-2.5 border-b border-gray-100"><Badge color="green">{s.status}</Badge></td>
+                        <td className="py-4 px-2.5 border-b border-gray-100" onClick={e => e.stopPropagation()}>
+                          {podeEscrever('socios') ? (
+                            s.status === 'Ativo' ? (
+                              <button
+                                type="button"
+                                onClick={() => setSocioParaDesligar(s)}
+                                disabled={alterandoId === s.id}
+                                className="bg-red-600 text-white px-3.5 py-2 rounded-xl font-bold text-xs hover:bg-red-700 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                              >
+                                Desligar
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => ativarSocio(s)}
+                                disabled={alterandoId === s.id}
+                                className="bg-green-600 text-white px-3.5 py-2 rounded-xl font-bold text-xs hover:bg-green-700 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                              >
+                                {alterandoId === s.id ? 'Ativando...' : 'Ativar'}
+                              </button>
+                            )
+                          ) : (
+                            <Badge color={s.status === 'Inativo' ? 'gray' : 'green'}>{s.status}</Badge>
+                          )}
+                        </td>
                         <td className="py-4 px-2.5 border-b border-gray-100 text-sm text-gray-600">{s.invernada}</td>
                         <td className="py-4 px-2.5 border-b border-gray-100 text-sm text-center font-medium text-gray-700">{s.dependentes}</td>
                         <td className="py-4 px-2.5 border-b border-gray-100">
@@ -236,6 +306,16 @@ export default function Socios() {
 
         </div>
       </main>
+
+      {socioParaDesligar && (
+        <ModalDesligamento
+          nomeSocio={socioParaDesligar.nome}
+          pendencias={levantarPendenciasFinanceiras(socioParaDesligar, mensalidades)}
+          processando={alterandoId === socioParaDesligar.id}
+          onCancelar={() => setSocioParaDesligar(null)}
+          onConfirmar={confirmarDesligamento}
+        />
+      )}
     </Layout>
   )
 }

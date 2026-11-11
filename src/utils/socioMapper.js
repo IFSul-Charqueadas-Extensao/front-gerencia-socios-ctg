@@ -54,6 +54,7 @@ export function mapBackendToFrontendSocio(b) {
     dependentes: b.dependentes?.length || 0,
     mensalidade: b.mensalidade || "Em dia",
     data_entrada: b.data_entrada,
+    data_desligamento: b.data_desligamento || null,
     ultimoPagamento: b.ultimoPagamento,
     pagamentos,
   };
@@ -82,6 +83,7 @@ export function mapFrontendToBackendSocio(f) {
     identidade: f.identidade || "Não informada",
     data_nascimento: f.data_nascimento || "1990-01-01",
     data_entrada: f.data_entrada || new Date().toISOString().split("T")[0],
+    data_desligamento: f.status === "Inativo" ? (f.data_desligamento || null) : null,
     status: f.status || "Ativo",
     categoria: INVERNADA_TO_CATEGORIA[f.invernada] || "1",
     dancarino: f.dancarino ?? true,
