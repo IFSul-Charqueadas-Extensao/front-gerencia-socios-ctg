@@ -6,6 +6,7 @@ const inputClass =
 
 export default function ModalVendaCopa({ onFechar, onSalvar }) {
   const [produto, setProduto] = useState("");
+  const [quantidade, setQuantidade] = useState("1");
   const [valor, setValor] = useState("");
   const [formaPagamento, setFormaPagamento] = useState("Pix");
   const [salvando, setSalvando] = useState(false);
@@ -81,15 +82,35 @@ export default function ModalVendaCopa({ onFechar, onSalvar }) {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Valor da venda (R$)
+                Quantidade
               </label>
               <input
                 type="number"
+                value={quantidade}
+                onChange={(e) => setQuantidade(e.target.value)}
+                placeholder="1"
+                min="1"
+                step="1"
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Valor da venda (R$)
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
                 value={valor}
-                onChange={(e) => setValor(e.target.value)}
+                onChange={(e) => {
+                  const novoValor = e.target.value;
+
+                  if (/^\d*[.,]?\d{0,2}$/.test(novoValor)) {
+                    setValor(novoValor);
+                  }
+                }}
                 placeholder="0,00"
-                min="0.01"
-                step="0.01"
                 className={inputClass}
               />
             </div>

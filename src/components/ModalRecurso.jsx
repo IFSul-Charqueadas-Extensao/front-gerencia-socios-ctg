@@ -23,12 +23,14 @@ export default function ModalRecurso({ recurso, onFechar, onSalvar }) {
   const editando = Boolean(recurso?.id);
 
   const [descricao, setDescricao] = useState(recurso?.descricao || "");
-  const [valor, setValor] = useState(recurso?.valor ? String(recurso.valor) : "");
+  const [valor, setValor] = useState(
+    recurso?.valor ? String(recurso.valor) : "",
+  );
   const [formaPagamento, setFormaPagamento] = useState(
-    recurso?.forma_pagamento || "Pix"
+    recurso?.forma_pagamento || "Pix",
   );
   const [dataHora, setDataHora] = useState(() =>
-    paraDatetimeLocal(recurso?.data)
+    paraDatetimeLocal(recurso?.data),
   );
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
@@ -128,12 +130,17 @@ export default function ModalRecurso({ recurso, onFechar, onSalvar }) {
                 Valor (R$)
               </label>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={valor}
-                onChange={(e) => setValor(e.target.value)}
+                onChange={(e) => {
+                  const novoValor = e.target.value;
+
+                  if (/^\d*[.,]?\d{0,2}$/.test(novoValor)) {
+                    setValor(novoValor);
+                  }
+                }}
                 placeholder="0,00"
-                min="0.01"
-                step="0.01"
                 className={inputClass}
               />
             </div>
@@ -196,8 +203,8 @@ export default function ModalRecurso({ recurso, onFechar, onSalvar }) {
               {salvando
                 ? "Salvando..."
                 : editando
-                ? "Salvar alterações"
-                : "Registrar recurso"}
+                  ? "Salvar alterações"
+                  : "Registrar recurso"}
             </button>
           </div>
         </form>
@@ -205,4 +212,3 @@ export default function ModalRecurso({ recurso, onFechar, onSalvar }) {
     </div>
   );
 }
-
