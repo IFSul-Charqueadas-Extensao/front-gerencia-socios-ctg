@@ -75,3 +75,25 @@ export function calcularStatusSocio(socio, mensalidadesData) {
   // Se a admissão for no futuro, considera-se em dia
   return 'Em dia'
 }
+
+
+export function levantarPendenciasFinanceiras(socio, mensalidadesData) {
+  const hoje = new Date()
+  const ano = hoje.getFullYear()
+  const mes = hoje.getMonth() + 1
+
+  const abertas = (mensalidadesData || []).filter(m =>
+    m.socio_id === socio.id &&
+    m.status !== 'Pago' &&
+    (m.ano < ano || (m.ano === ano && m.mes <= mes))
+  )
+
+  const total = abertas.reduce((acc, m) => acc + Number(m.valor || 0), 0)
+  const statusAuto = calcularStatusSocio(socio, mensalidadesData)
+
+  return {
+    mensalidades: abertas,
+    total,
+    temPendencia: abertas.length > 0 || statusAuto === 'Atrasado',
+  }
+}
